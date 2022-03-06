@@ -4,16 +4,10 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from contracts.token.ERC721_base import (
-    _exists
-)
-
-from contracts.ERC165_base import (
-    ERC165_register_interface
-)
-
-from contracts.lib.ShortString import uint256_to_ss
-from contracts.lib.Array import concat_arr
+from token.ERC721_base import (_exists)
+from token.ERC165_base import (ERC165_register_interface)
+from utils.ShortString import uint256_to_ss
+from utils.Array import concat_arr
 
 #
 # Storage

@@ -9,19 +9,12 @@ from starkware.cairo.common.signature import verify_ecdsa_signature
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.starknet.common.syscalls import get_tx_signature, get_contract_address, get_block_timestamp, get_caller_address
 
+from DecentralMediaHelper import (Rating)
+from token.token.ERC721 import (mint)
+
+
 const USER_ERC721 = 1
 const CONTENT_ERC721 = 2
-
-struct Rating:
-    member num_ratings : felt
-    member sum_ratings : felt
-end
-
-
-from contracts.token.ERC721 import (
-    mint
-)
-
 
 @storage_var
 func admin() -> (adm : felt):

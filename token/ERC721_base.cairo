@@ -4,44 +4,10 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.cairo.common.math import assert_not_zero, assert_not_equal
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.syscalls import get_caller_address
-from starkware.cairo.common.uint256 import (
-    Uint256, uint256_add, uint256_sub
-)
+from starkware.cairo.common.uint256 import (Uint256, uint256_add, uint256_sub)
 
-from contracts.ERC165_base import (
-    ERC165_register_interface
-)
-
-from contracts.token.IERC721_Receiver import IERC721_Receiver
-
-struct String:
-    member len: felt
-    member str: felt*
-end
-
-struct Array:
-    member len: felt
-    member arr: felt*
-end
-
-struct Rating:
-    member num_ratings: felt
-    member sum_ratings: felt
-end
-
-struct User:
-    member username: String
-    member image: String
-    member background_image: String
-    member description: String
-    member social_links_len: felt
-    member social_links: String*
-    member following: Array
-    member followers: Array
-    member rating: Rating
-    member contents: Array
-    member created_at: felt
-end
+from token.ERC165_base import ERC165_register_interface
+from token.IERC721_Receiver import IERC721_Receiver
 
 #
 # Storage
@@ -64,10 +30,6 @@ func ERC721_balances(account: felt) -> (balance: Uint256):
 end
 
 @storage_var
-func ERC721_tokens(token_id: felt) -> (balance: User):
-end
-
-@storage_var
 func ERC721_token_approvals(token_id: Uint256) -> (res: felt):
 end
 
@@ -81,14 +43,6 @@ end
 
 @event
 func Transfer(_from: felt, to: felt, tokenId: Uint256):
-end
-
-@event
-func Create(tokenId: Uint256):
-end
-
-@event
-func Update(tokenId: Uint256, user: User):
 end
 
 @event
@@ -325,41 +279,6 @@ func ERC721_burn{
 
     # Emit Transfer event
     Transfer.emit(_from=owner, to=0, tokenId=token_id)
-    return ()
-end
-
-func ERC721_createMetadata{
-        pedersen_ptr: HashBuiltin*,
-        syscall_ptr: felt*,
-        range_check_ptr
-    }(token_id: Uint256,
-    username: String,
-    image: String,
-    background_image: String,
-    description: String,
-    social_links_len: felt,
-    social_links: String*
-    ):
-    alloc_locals
-    let (local owner) = ERC721_ownerOf(token_id)
-    let (created_at) = get_block_timestamp()
-
-    ERC721_tokens.write(token_id, User(
-        username=username,
-        image=image,
-        background_image=background_image,
-        description=description,
-        social_links_len=social_links_len,
-        social_links=social_links,
-        following=Array(0, []),
-        followers=Array(0, []),
-        rating=Rating(0, 0),
-        contents=Array(0, []),
-        created_at=created_at
-    ))
-
-    # Emit Create event
-    Create.emit(tokenId=token_id)
     return ()
 end
 

@@ -4,7 +4,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from contracts.token.ERC721_base import (
+from token.ERC721_base import (
     ERC721_name,
     ERC721_symbol,
     ERC721_balanceOf,
@@ -13,8 +13,6 @@ from contracts.token.ERC721_base import (
     ERC721_isApprovedForAll,
     ERC721_mint,
     ERC721_burn,
-    ERC721_updateMetadata,
-
     ERC721_initializer,
     ERC721_approve,
     ERC721_setApprovalForAll,
@@ -22,45 +20,29 @@ from contracts.token.ERC721_base import (
     ERC721_safeTransferFrom
 )
 
-from contracts.token.ERC721_Metadata_base import (
+from token.ERC721_Metadata_base import (
     ERC721_Metadata_initializer,
     ERC721_Metadata_tokenURI,
     ERC721_Metadata_setBaseTokenURI,
 )
 
-from contracts.ERC165_base import (
+from token.ERC721_User_base import (
+    ERC721_User_initializer,
+    ERC721_createMetadata,
+)
+
+from token.ERC165_base import (
     ERC165_supports_interface
 )
 
-from contracts.lib.Ownable_base import (
+from utils.Ownable_base import (
     Ownable_initializer,
     Ownable_only_owner,
     Ownable_get_owner,
     Ownable_transfer_ownership
 )
 
-struct String:
-    member len: felt
-    member str: felt*
-end
-
-struct Rating:
-    member num_ratings: felt
-    member sum_ratings: felt
-end
-
-struct User:
-    member username: String
-    member image: String
-    member background_image: String
-    member description: String
-    member social_links: String*
-    member following: felt*
-    member followers: felt*
-    member rating: Rating
-    member contents: felt*
-    member created_at: felt
-end
+from DecentralMediaHelper import (Rating, String, Array, User)
 
 #
 # Constructor
@@ -74,6 +56,7 @@ func constructor{
     }(name: felt, symbol: felt, owner: felt, base_token_uri_len: felt, base_token_uri: felt*):
     ERC721_initializer(name, symbol)
     ERC721_Metadata_initializer()
+    ERC721_User_initializer()
     Ownable_initializer(owner)
     ERC721_Metadata_setBaseTokenURI(base_token_uri_len, base_token_uri)
     return ()
@@ -246,13 +229,22 @@ func mint{
 end
 
 @external
-func updateMetadata{
+func createMetadata{
         pedersen_ptr: HashBuiltin*,
         syscall_ptr: felt*,
         range_check_ptr
-    }(token_id: Uint256, user: User):
+    }(token_id: Uint256,
+    username: String,
+    image: String,
+    background_image: String,
+    description: String,
+    social_links_len: felt,
+    social_links: String*
+    ):
     Ownable_only_owner()
-    ERC721_updateMetadata(token_id, user)
+    ERC721_createMetadata(token_id, username, image, 
+                          background_image, description, 
+                          social_links_len, social_links)
     return ()
 end
 
