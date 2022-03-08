@@ -9,8 +9,8 @@ from starkware.cairo.common.signature import verify_ecdsa_signature
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.starknet.common.syscalls import get_tx_signature, get_contract_address, get_block_timestamp, get_caller_address
 
-from DecentralMediaHelper import (Rating)
-from token.token.ERC721 import (mint)
+from utils.DecentralMediaHelper import (Rating, String)
+from ERC721_User import (mint, createUser)
 
 
 const USER_ERC721 = 1
@@ -75,11 +75,12 @@ func create_user{
     ecdsa_ptr : SignatureBuiltin*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
-    username : felt,
-    image : felt,
-    background_image : felt,
-    description : felt,
-    social_links : felt*,
+    username : String,
+    image : String,
+    background_image : String,
+    description : String,
+    social_links_len : felt,
+    social_links : String*,
     nonce : felt):
     alloc_locals
 
@@ -101,6 +102,9 @@ func create_user{
     # TODO: Change ERC721 contract to mint with parameters
 
     mint(caller, token_id)
+    createUser(token_id, username, image, 
+                background_image, description, 
+                social_links_len, social_links)
 
     return ()
 end

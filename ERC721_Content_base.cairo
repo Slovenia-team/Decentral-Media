@@ -9,7 +9,7 @@ from token.ERC721_base import (_exists)
 from token.ERC165_base import (ERC165_register_interface)
 from utils.ShortString import uint256_to_ss
 from utils.Array import concat_arr
-from DecentralMediaHelper import (Rating, String, Array, User)
+from utils.DecentralMediaHelper import (Rating, String, Array, User)
 
 #
 # Storage

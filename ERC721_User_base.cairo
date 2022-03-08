@@ -59,7 +59,7 @@ end
 # Externals
 #
 
-func ERC721_createMetadata{
+func ERC721_createUser{
         pedersen_ptr: HashBuiltin*,
         syscall_ptr: felt*,
         range_check_ptr
