@@ -40,12 +40,20 @@ from cairo-contracts.openzeppelin.access.ownable import (
     Ownable_only_owner
 )
 
-from ERC721_Content_base import (
-    ERC721_Content_initializer
+from ERC721_Storage import (
+    ERC721_Storage_initializer,
+    ERC721_getPropertyFelt,
+    ERC721_getPropertyArray,
+    ERC721_getProperties,
+    ERC721_setPropertyFelt,
+    ERC721_setPropertyArray,
+    ERC721_setProperties
 )
 
-from utils.DecentralMediaHelper import (Rating, String, Array, User)
-
+struct Array:
+    member len: felt
+    member arr: felt*
+end
 
 #
 # Constructor
@@ -63,7 +71,7 @@ func constructor{
     ):
     ERC721_initializer(name, symbol)
     ERC721_Enumerable_initializer()
-    ERC721_Content_initializer()
+    ERC721_Storage_initializer()
     Ownable_initializer(owner)
     return ()
 end
@@ -182,6 +190,37 @@ func tokenURI{
     return (tokenURI)
 end
 
+@view
+func getPropertyFelt{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(name: felt, tokenId: Uint256) -> (property: felt):
+    let (property: felt) = ERC721_getPropertyFelt(name, tokenId)
+    return (property)
+end
+
+@view
+func getPropertyArray{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(name: felt, tokenId: Uint256) -> (property: Array):
+    let (property: felt) = ERC721_getPropertyArray(name, tokenId)
+    return (property)
+end
+
+
+@view
+func getProperties{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(names: felt*, names_len: felt, tokenId: Uint256) -> (properties: Array*):
+    let (properties: Array*) = ERC721_getProperties(names, names_len, tokenId)
+    return (properties)
+end
+
 #
 # Externals
 #
@@ -266,5 +305,47 @@ func setTokenURI{
     }(tokenId: Uint256, tokenURI: felt):
     Ownable_only_owner()
     ERC721_setTokenURI(tokenId, tokenURI)
+    return ()
+end
+
+@external
+func setPropertyFelt{
+        pedersen_ptr: HashBuiltin*,
+        syscall_ptr: felt*,
+        range_check_ptr
+    }(name: felt,
+    token_id: Uint256,
+    value: felt):
+    Ownable_only_owner()
+    ERC721_setPropertyFelt(name, token_id, value)
+    return ()
+end
+
+@external
+func setPropertyArray{
+        pedersen_ptr: HashBuiltin*,
+        syscall_ptr: felt*,
+        range_check_ptr
+    }(name: felt,
+    token_id: Uint256,
+    value: felt*
+    value_len: felt):
+    Ownable_only_owner()
+    ERC721_setPropertyArray(name, token_id, value, value_len)
+    return ()
+end
+
+
+@external
+func setProperties{
+        pedersen_ptr: HashBuiltin*,
+        syscall_ptr: felt*,
+        range_check_ptr
+    }(names: felt*,
+    n: felt,
+    values: Array*,
+    token_id: Uint256):
+    Ownable_only_owner()
+    ERC721_setProperties(names n, values, token_id)
     return ()
 end

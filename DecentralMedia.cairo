@@ -4,13 +4,14 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import (HashBuiltin, SignatureBuiltin)
 from starkware.cairo.common.hash import hash2
-from starkware.cairo.common.math import assert_nn, assert_not_zero, unsigned_div_rem
+from starkware.cairo.common.math import assert_nn, assert_not_zero, unsigned_div_rem, split_felt
 from starkware.cairo.common.signature import verify_ecdsa_signature
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.starknet.common.syscalls import get_tx_signature, get_contract_address, get_block_timestamp, get_caller_address
+from starkware.cairo.common.uint256 import Uint256
 
-from utils.DecentralMediaHelper import (Rating, String)
-from ERC721_User import (mint, createUser)
+from utils.DecentralMediaHelper import (Array, User)
+from ERC721_User import (mint, getPropertyFelt, getPropertyArray, getProperties, setPropertyFelt, setPropertyArray, setProperties)
 
 
 const USER_ERC721 = 1
@@ -25,7 +26,7 @@ func pause() -> (paus : felt):
 end
 
 @storage_var
-func user(address : felt) -> (token_id : felt):
+func user_token_id(address : felt) -> (token_id : Uint256):
 end
 
 @storage_var
@@ -33,7 +34,7 @@ func erc721_contract(contract : felt) -> (contract : felt):
 end
 
 @storage_var
-func user_token_id() -> (token_id : felt):
+func user_counter() -> (token_id : felt):
 end
 
 
@@ -64,10 +65,49 @@ func get_user_token_id{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
     address : felt) -> (
-    usr : felt):
-    return user.read(address=address)
+    token_id : Uint256):
+    return user_token_id.read(address=address)
 end
 
+@view
+func get_user{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    address : felt) -> (
+    token_id : User):
+    alloc_locals
+
+    let (token_id) = user_token_id.read(address=address)
+    let (contract) = erc721_contract.read(contract=USER_ERC721)
+
+    let names : felt* = alloc()
+    names[0] = 'username'
+    names[1] = 'image'
+    names[2] = 'background_image'
+    names[3] = 'description'
+    names[4] = 'social_link'
+    names[5] = 'following'
+    names[6] = 'followers'
+    names[7] = 'contents'
+    names[8] = 'num_ratings'
+    names[9] = 'sum_ratings'
+    names[10] = 'created_at'
+
+    let (user) = getProperties(contract, names, 11, token_id)
+
+    return User(username = user[0], 
+                image = user[1], 
+                background_image = user[2], 
+                description = user[3],
+                social_link = user[4]
+                following = user[5]
+                followers = user[6],
+                contents = user[7],
+                num_ratings = user[8].arr[0],
+                sum_ratings = user[9].arr[0],
+                created_at = user[10].arr[0])
+end
 
 @external
 func create_user{
@@ -75,12 +115,11 @@ func create_user{
     ecdsa_ptr : SignatureBuiltin*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
-    username : String,
-    image : String,
-    background_image : String,
-    description : String,
-    social_links_len : felt,
-    social_links : String*,
+    username : Array,
+    image : Array,
+    background_image : Array,
+    description : Array,
+    social_link : Array,
     nonce : felt):
     alloc_locals
 
@@ -97,15 +136,33 @@ func create_user{
 
     # TODO: If we are filtering by unique usernames, create storage variable for usernames and add assert here
 
-    let (token_id) = user_token_id.read()
+    let (counter) = user_counter.read()
+    let (contract) = erc721_contract.read(contract=USER_ERC721)
+    let (timestamp) = get_block_timestamp()
+    let (low : felt, high : felt) = split_felt(counter)
+    let token_id : Uint256 = Uint256(low,high)
 
-    # TODO: Change ERC721 contract to mint with parameters
+    mint(contract, caller, token_id)
 
-    mint(caller, token_id)
-    createUser(token_id, username, image, 
-                background_image, description, 
-                social_links_len, social_links)
+    let names : felt* = alloc()
+    names[0] = 'username'
+    names[1] = 'image'
+    names[2] = 'background_image'
+    names[3] = 'description'
+    names[4] = 'social_link'
+    names[5] = 'created_at'
 
+    let values : felt* = alloc()
+    values[0] = username
+    values[1] = image
+    values[2] = background_image
+    values[3] = description
+    values[4] = social_link
+    values[5] = timestamp
+
+    setProperties(contract, names, 6, values token_id)
+
+    user_counter.write(counter + 1)
     return ()
 end
 
@@ -172,7 +229,6 @@ func set_content_erc721_contract{
 
     return ()
 end
-
 
 func check_on{
     syscall_ptr : felt*,
