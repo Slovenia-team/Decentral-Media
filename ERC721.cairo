@@ -6,7 +6,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from cairo-contracts.openzeppelin.token.erc721.library import (
+from openzeppelin.token.erc721.library import (
     ERC721_name,
     ERC721_symbol,
     ERC721_balanceOf,
@@ -22,7 +22,7 @@ from cairo-contracts.openzeppelin.token.erc721.library import (
     ERC721_setTokenURI
 )
 
-from cairo-contracts.openzeppelin.token.erc721_enumerable.library import (
+from openzeppelin.token.erc721_enumerable.library import (
     ERC721_Enumerable_initializer,
     ERC721_Enumerable_totalSupply,
     ERC721_Enumerable_tokenByIndex,
@@ -33,9 +33,9 @@ from cairo-contracts.openzeppelin.token.erc721_enumerable.library import (
     ERC721_Enumerable_safeTransferFrom
 )
 
-from cairo-contracts.openzeppelin.introspection.ERC165 import ERC165_supports_interface
+from openzeppelin.introspection.ERC165 import ERC165_supports_interface
 
-from cairo-contracts.openzeppelin.access.ownable import (
+from openzeppelin.access.ownable import (
     Ownable_initializer,
     Ownable_only_owner
 )
@@ -328,7 +328,7 @@ func setPropertyArray{
         range_check_ptr
     }(name: felt,
     token_id: Uint256,
-    value: felt*
+    value: felt*,
     value_len: felt):
     Ownable_only_owner()
     ERC721_setPropertyArray(name, token_id, value, value_len)
@@ -346,6 +346,6 @@ func setProperties{
     values: Array*,
     token_id: Uint256):
     Ownable_only_owner()
-    ERC721_setProperties(names n, values, token_id)
+    ERC721_setProperties(names, n, values, token_id)
     return ()
 end

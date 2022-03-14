@@ -5,8 +5,8 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from token.ERC721_base import (_exists)
-from token.ERC165_base import (ERC165_register_interface)
+from openzeppelin.token.erc721_enumerable.library import _exists
+from openzeppelin.introspection.ERC165 import ERC165_register_interface
 from utils.ShortString import uint256_to_ss
 from utils.Array import concat_arr
 
@@ -60,7 +60,7 @@ func ERC721_getPropertyFelt{
 
     let (prop) = properties.read(name, token_id)
 
-    return prop.arr[0]
+    return (prop.arr[0])
 end
 
 @view
@@ -110,7 +110,7 @@ func ERC721_setPropertyArray{
     range_check_ptr}(
     name: felt,
     token_id: Uint256,
-    value: felt*
+    value: felt*,
     value_len: felt):
     
     let (prop) = Array(value_len, value)
@@ -166,7 +166,7 @@ func loop_set_properties{
     range_check_ptr}(
     names: felt*,
     n: felt,
-    values: Array*
+    values: Array*,
     token_id: Uint256):
     
     properties.write(names[n-1], token_id, values[n-1])

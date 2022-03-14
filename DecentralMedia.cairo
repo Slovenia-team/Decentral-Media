@@ -11,7 +11,7 @@ from starkware.starknet.common.syscalls import get_tx_signature, get_contract_ad
 from starkware.cairo.common.uint256 import Uint256
 
 from utils.DecentralMediaHelper import (Array, User)
-from ERC721_User import (mint, getPropertyFelt, getPropertyArray, getProperties, setPropertyFelt, setPropertyArray, setProperties)
+from ERC721 import (mint, getPropertyFelt, getPropertyArray, getProperties, setPropertyFelt, setPropertyArray, setProperties)
 
 
 const USER_ERC721 = 1
@@ -100,8 +100,8 @@ func get_user{
                 image = user[1], 
                 background_image = user[2], 
                 description = user[3],
-                social_link = user[4]
-                following = user[5]
+                social_link = user[4],
+                following = user[5],
                 followers = user[6],
                 contents = user[7],
                 num_ratings = user[8].arr[0],
@@ -160,7 +160,7 @@ func create_user{
     values[4] = social_link
     values[5] = timestamp
 
-    setProperties(contract, names, 6, values token_id)
+    setProperties(contract, names, 6, values, token_id)
 
     user_counter.write(counter + 1)
     return ()
