@@ -118,6 +118,44 @@ func set_property_felt{
     return ()
 end
 
+@external
+func set_property_array{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    name: felt,
+    token_id: Uint256,
+    value_len: felt,
+    value: felt*):
+
+    let (property_id) = storage_property_id.read()
+    storage_properties.write(name, token_id, property_id)
+    storage_property_len.write(property_id, value_len)
+    storage_property_id.write(property_id + 1)
+
+    write_property_as_array(property_id, 0, value_len, 0, value_len, value)
+
+    return ()
+end
+
+@external
+func set_properties{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    names_len: felt,
+    names: felt*,
+    token_id: Uint256,
+    offsets_len: felt,
+    offsets: felt*,
+    values_len: felt,
+    values: felt*):
+
+    write_multiple_properties_as_array(names_len, names, 0, offsets_len, offsets, values_len, values, token_id)
+
+    return ()
+end
+
 
 #
 # Internals
@@ -177,4 +215,62 @@ func read_multiple_properties_as_array{
     let (offsets_len, offsets, properties_len, properties) = read_multiple_properties_as_array(names_len, names, new_offsets_len, new_offsets, new_properties_len, new_properties, token_id)
 
     return (offsets_len=offsets_len, offsets=offsets, properties_len=properties_len, properties=properties)
+end
+
+func write_property_as_array{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    property_id: felt,
+    offset_from: felt,
+    offset_to: felt,
+    n: felt,
+    value_len: felt,
+    value: felt*):
+
+    if offset_from + n == offset_to:
+        return ()
+    end
+
+    storage_property.write(property_id, n, value[offset_from + n])
+    write_property_as_array(property_id, offset_from, offset_to, n + 1, value_len, value)
+
+    return ()
+end
+
+func write_multiple_properties_as_array{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    names_len: felt,
+    names: felt*,
+    n: felt,
+    offsets_len: felt,
+    offsets: felt*,
+    values_len: felt,
+    values: felt*,
+    token_id: Uint256):
+    alloc_locals
+
+    if n == offsets_len:
+        return ()
+    end
+
+    let (property_id) = storage_property_id.read()
+    storage_properties.write(names[n], token_id, property_id)
+    storage_property_id.write(property_id + 1)
+
+    if n == 0:
+        storage_property_len.write(property_id, offsets[n])
+        write_property_as_array(property_id, 0, offsets[n], 0, offsets[n], values)
+    end
+
+    if n != 0:
+        storage_property_len.write(property_id, offsets[n] - offsets[n - 1])
+        write_property_as_array(property_id, offsets[n - 1], offsets[n], 0, offsets[n] - offsets[n - 1], values)
+    end
+
+    write_multiple_properties_as_array(names_len, names, n + 1, offsets_len, offsets, values_len, values, token_id)
+
+    return ()
 end
