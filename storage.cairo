@@ -74,7 +74,7 @@ func Storage_get_property_array{
     let (property_len) = storage_property_len.read(property_id)
 
     let (local property: felt*) = alloc()
-    let (property_len, property) = _read_property_as_array(property_id, property_len, 0, property)
+    let (property_len, property) = _read_property_as_array(property_id, property_len, property, 0)
 
     return (property_len=property_len, property=property)
 end
@@ -157,28 +157,26 @@ end
 #
 # Internals
 #
-
 func _read_property_as_array{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
     property_id: felt,
-    property_len: felt,
     res_len: felt,
-    res: felt*) -> (res_len: felt, res: felt*):
+    res: felt*,
+    n: felt) -> (res_len: felt, res: felt*):
     alloc_locals
 
-    if res_len == property_len:
-        return (res_len=res_len, res=res)
+    if res_len == 0:
+        return (res_len, res)
     end
 
-    let (local element: felt) = storage_property.read(property_id, res_len)
-    let (local new_element: felt*) = alloc()
-    new_element[0] = element
-    let (new_res_len, new_res) = concat_arr(res_len, res, 1, new_element)
-    let (res_len, res) = _read_property_as_array(property_id, property_len, new_res_len, new_res)
+    let (local element: felt) = storage_property.read(property_id, n)
 
-    return (res_len=res_len, res=res)
+    res[0] = element
+    _read_property_as_array(property_id, res_len - 1, res + 1, n + 1)
+
+    return (res_len, res)
 end
 
 func _read_multiple_properties_as_array{
@@ -194,25 +192,27 @@ func _read_multiple_properties_as_array{
     token_id: Uint256) -> (offsets_len: felt, offsets: felt*, properties_len: felt, properties: felt*):
     alloc_locals
 
-    if offsets_len == names_len:
-        return (offsets_len=offsets_len, offsets=offsets, properties_len=properties_len, properties=properties)
+    if names_len == 0:
+        return (offsets_len, offsets, properties_len, properties)
     end
 
     let (property_id) = storage_properties.read(names[offsets_len], token_id)
     let (property_len) = storage_property_len.read(property_id)
+    _read_property_as_array(property_id, property_len, properties, 0)
+    assert offsets[0] = properties_len + property_len
 
-    let (local property: felt*) = alloc()
-    let (new_property_len, new_property) = _read_property_as_array(property_id, property_len, 0, property)
-    let (new_properties_len, new_properties) = concat_arr(properties_len, properties, new_property_len, new_property)
+    let (new_offsets_len, new_offsets, new_properties_len, new_properties) = _read_multiple_properties_as_array(
+        names_len - 1, 
+        names, 
+        offsets_len + 1, 
+        offsets + 1, 
+        properties_len + property_len, 
+        properties + property_len, 
+        token_id)
 
-    let (local new_offset: felt*) = alloc()
-    new_offset[0] = new_properties_len
-    let (new_offsets_len, new_offsets) = concat_arr(offsets_len, offsets, 1, new_offset)
-
-    let (offsets_len, offsets, properties_len, properties) = _read_multiple_properties_as_array(names_len, names, new_offsets_len, new_offsets, new_properties_len, new_properties, token_id)
-
-    return (offsets_len=offsets_len, offsets=offsets, properties_len=properties_len, properties=properties)
+    return (new_offsets_len, offsets, new_properties_len, properties)
 end
+
 
 func _write_property_as_array{
     syscall_ptr : felt*,
