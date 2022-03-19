@@ -10,9 +10,9 @@ from starkware.starknet.common.messages import send_message_to_l1
 from starkware.starknet.common.syscalls import get_tx_signature, get_contract_address, get_block_timestamp, get_caller_address
 from starkware.cairo.common.uint256 import Uint256
 
-from utils.DecentralMediaHelper import (Array, User)
-from ERC721 import (mint, getPropertyFelt, getPropertyArray, getProperties, setPropertyFelt, setPropertyArray, setProperties)
-
+from utils.DecentralMediaHelper import (User, deserialize, Array)
+from utils.Array import concat_arr
+from IERC721 import IERC721
 
 const USER_ERC721 = 1
 const CONTENT_ERC721 = 2
@@ -75,38 +75,57 @@ func get_user{
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
     address : felt) -> (
-    token_id : User):
+    username_len: felt,
+    username: felt*,
+    image_len: felt,
+    image: felt*,
+    background_image_len: felt,
+    background_image: felt*,
+    description_len: felt,
+    description: felt*,
+    social_link_len: felt,
+    social_link: felt*,
+    following_len: felt,
+    following: felt*,
+    followers_len: felt,
+    followers: felt*,
+    contents_len: felt,
+    contents: felt*,
+    num_ratings: felt,
+    sum_ratings: felt,
+    created_at: felt):
     alloc_locals
 
     let (token_id) = user_token_id.read(address=address)
     let (contract) = erc721_contract.read(contract=USER_ERC721)
 
     let names : felt* = alloc()
-    names[0] = 'username'
-    names[1] = 'image'
-    names[2] = 'background_image'
-    names[3] = 'description'
-    names[4] = 'social_link'
-    names[5] = 'following'
-    names[6] = 'followers'
-    names[7] = 'contents'
-    names[8] = 'num_ratings'
-    names[9] = 'sum_ratings'
-    names[10] = 'created_at'
+    assert [names] = 'username'
+    assert [names + 1] = 'image'
+    assert [names + 2] = 'background_image'
+    assert [names + 3] = 'description'
+    assert [names + 4] = 'social_link'
+    assert [names + 5] = 'following'
+    assert [names + 6] = 'followers'
+    assert [names + 7] = 'contents'
+    assert [names + 8] = 'num_ratings'
+    assert [names + 9] = 'sum_ratings'
+    assert [names + 10] = 'created_at'
 
-    let (user) = getProperties(contract, names, 11, token_id)
+    let (offsets_len, offsets, properties_len, properties) = IERC721.getProperties(contract, 11, names, token_id)
+    let (user_data_len: felt, user_data: Array*) = deserialize(offsets_len, offsets, properties_len, properties)
 
-    return User(username = user[0], 
-                image = user[1], 
-                background_image = user[2], 
-                description = user[3],
-                social_link = user[4],
-                following = user[5],
-                followers = user[6],
-                contents = user[7],
-                num_ratings = user[8].arr[0],
-                sum_ratings = user[9].arr[0],
-                created_at = user[10].arr[0])
+    return (user_data[0].len, user_data[0].arr,
+            user_data[1].len, user_data[1].arr,
+            user_data[2].len, user_data[2].arr,
+            user_data[3].len, user_data[3].arr,
+            user_data[4].len, user_data[4].arr,
+            user_data[5].len, user_data[5].arr,
+            user_data[6].len, user_data[6].arr,
+            user_data[7].len, user_data[7].arr,
+            user_data[8].arr[0],
+            user_data[9].arr[0],
+            user_data[10].arr[0])
 end
 
 @external
@@ -115,11 +134,16 @@ func create_user{
     ecdsa_ptr : SignatureBuiltin*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
-    username : Array,
-    image : Array,
-    background_image : Array,
-    description : Array,
-    social_link : Array,
+    username_len : felt,
+    username : felt*,
+    image_len : felt,
+    image : felt*,
+    background_image_len : felt,
+    background_image : felt*,
+    description_len : felt,
+    description : felt*,
+    social_link_len : felt,
+    social_link : felt*,
     nonce : felt):
     alloc_locals
 
@@ -131,9 +155,6 @@ func create_user{
     inputs[1] = nonce
     verify_inputs_by_signature(caller, 2, inputs)
 
-    let (user) = user.read(caller)
-    assert user = 0
-
     # TODO: If we are filtering by unique usernames, create storage variable for usernames and add assert here
 
     let (counter) = user_counter.read()
@@ -142,25 +163,34 @@ func create_user{
     let (low : felt, high : felt) = split_felt(counter)
     let token_id : Uint256 = Uint256(low,high)
 
-    mint(contract, caller, token_id)
+    IERC721.mint(contract, caller, token_id)
 
-    let names : felt* = alloc()
-    names[0] = 'username'
-    names[1] = 'image'
-    names[2] = 'background_image'
-    names[3] = 'description'
-    names[4] = 'social_link'
-    names[5] = 'created_at'
+    let (local names: felt*) = alloc()
+    assert [names] = 'username'
+    assert [names + 1] = 'image'
+    assert [names + 2] = 'background_image'
+    assert [names + 3] = 'description'
+    assert [names + 4] = 'social_link'
+    assert [names + 5] = 'created_at'
 
-    let values : felt* = alloc()
-    values[0] = username
-    values[1] = image
-    values[2] = background_image
-    values[3] = description
-    values[4] = social_link
-    values[5] = timestamp
+    let (local offsets: felt*) = alloc()
+    assert [offsets] = username_len
+    assert [offsets + 1] = offsets[0] + image_len
+    assert [offsets + 2] = offsets[1] + background_image_len
+    assert [offsets + 3] = offsets[2] + description_len
+    assert [offsets + 4] = offsets[3] + social_link_len
+    assert [offsets + 5] = offsets[4] + 1
 
-    setProperties(contract, names, 6, values, token_id)
+    let (local timestamp_arr: felt*) = alloc()
+    assert [timestamp_arr] = timestamp
+
+    let (values_len, values) = concat_arr(username_len, username, image_len, image)
+    let (values_len, values) = concat_arr(values_len, values, background_image_len, background_image)
+    let (values_len, values) = concat_arr(values_len, values, description_len, description)
+    let (values_len, values) = concat_arr(values_len, values, social_link_len, social_link)
+    let (values_len, values) = concat_arr(values_len, values, 1, timestamp_arr)
+
+    IERC721.setProperties(contract, 6, names, token_id, 6, offsets, values_len, values)
 
     user_counter.write(counter + 1)
     return ()
