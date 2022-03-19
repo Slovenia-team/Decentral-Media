@@ -34,12 +34,13 @@ end
 # Constructor
 #
 
-@constructor
-func constructor{
+func Storage_initializer{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}():
     
+    #TODO ADD: SUPPORT interface
+    #ERC165_register_interface(0x80ac58cd)
     return ()
 end
 
@@ -48,8 +49,7 @@ end
 # Getters
 #
 
-@view
-func get_property_felt{
+func Storage_get_property_felt{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -62,8 +62,7 @@ func get_property_felt{
     return (property)
 end
 
-@view
-func get_property_array{
+func Storage_get_property_array{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -75,13 +74,12 @@ func get_property_array{
     let (property_len) = storage_property_len.read(property_id)
 
     let (local property: felt*) = alloc()
-    let (property_len, property) = read_property_as_array(property_id, property_len, 0, property)
+    let (property_len, property) = _read_property_as_array(property_id, property_len, 0, property)
 
     return (property_len=property_len, property=property)
 end
 
-@view
-func get_properties{
+func Storage_get_properties{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -91,7 +89,7 @@ func get_properties{
 
     let offsets : felt* = alloc()
     let properties : felt* = alloc()
-    let (offsets_len, offsets, properties_len, properties) = read_multiple_properties_as_array(names_len, names, 0, offsets, 0, properties, token_id)
+    let (offsets_len, offsets, properties_len, properties) = _read_multiple_properties_as_array(names_len, names, 0, offsets, 0, properties, token_id)
 
     return (offsets_len, offsets, properties_len, properties)
 end
@@ -101,8 +99,7 @@ end
 # Externals
 #
 
-@external
-func set_property_felt{
+func Storage_set_property_felt{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -118,8 +115,8 @@ func set_property_felt{
     return ()
 end
 
-@external
-func set_property_array{
+
+func Storage_set_property_array{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -133,13 +130,13 @@ func set_property_array{
     storage_property_len.write(property_id, value_len)
     storage_property_id.write(property_id + 1)
 
-    write_property_as_array(property_id, 0, value_len, 0, value_len, value)
+    _write_property_as_array(property_id, 0, value_len, 0, value_len, value)
 
     return ()
 end
 
-@external
-func set_properties{
+
+func Storage_set_properties{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -151,7 +148,7 @@ func set_properties{
     values_len: felt,
     values: felt*):
 
-    write_multiple_properties_as_array(names_len, names, 0, offsets_len, offsets, values_len, values, token_id)
+    _write_multiple_properties_as_array(names_len, names, 0, offsets_len, offsets, values_len, values, token_id)
 
     return ()
 end
@@ -161,7 +158,7 @@ end
 # Internals
 #
 
-func read_property_as_array{
+func _read_property_as_array{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -179,12 +176,12 @@ func read_property_as_array{
     let (local new_element: felt*) = alloc()
     new_element[0] = element
     let (new_res_len, new_res) = concat_arr(res_len, res, 1, new_element)
-    let (res_len, res) = read_property_as_array(property_id, property_len, new_res_len, new_res)
+    let (res_len, res) = _read_property_as_array(property_id, property_len, new_res_len, new_res)
 
     return (res_len=res_len, res=res)
 end
 
-func read_multiple_properties_as_array{
+func _read_multiple_properties_as_array{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -205,19 +202,19 @@ func read_multiple_properties_as_array{
     let (property_len) = storage_property_len.read(property_id)
 
     let (local property: felt*) = alloc()
-    let (new_property_len, new_property) = read_property_as_array(property_id, property_len, 0, property)
+    let (new_property_len, new_property) = _read_property_as_array(property_id, property_len, 0, property)
     let (new_properties_len, new_properties) = concat_arr(properties_len, properties, new_property_len, new_property)
 
     let (local new_offset: felt*) = alloc()
     new_offset[0] = new_properties_len
     let (new_offsets_len, new_offsets) = concat_arr(offsets_len, offsets, 1, new_offset)
 
-    let (offsets_len, offsets, properties_len, properties) = read_multiple_properties_as_array(names_len, names, new_offsets_len, new_offsets, new_properties_len, new_properties, token_id)
+    let (offsets_len, offsets, properties_len, properties) = _read_multiple_properties_as_array(names_len, names, new_offsets_len, new_offsets, new_properties_len, new_properties, token_id)
 
     return (offsets_len=offsets_len, offsets=offsets, properties_len=properties_len, properties=properties)
 end
 
-func write_property_as_array{
+func _write_property_as_array{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -233,12 +230,12 @@ func write_property_as_array{
     end
 
     storage_property.write(property_id, n, value[offset_from + n])
-    write_property_as_array(property_id, offset_from, offset_to, n + 1, value_len, value)
+    _write_property_as_array(property_id, offset_from, offset_to, n + 1, value_len, value)
 
     return ()
 end
 
-func write_multiple_properties_as_array{
+func _write_multiple_properties_as_array{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
@@ -262,15 +259,15 @@ func write_multiple_properties_as_array{
 
     if n == 0:
         storage_property_len.write(property_id, offsets[n])
-        write_property_as_array(property_id, 0, offsets[n], 0, offsets[n], values)
+        _write_property_as_array(property_id, 0, offsets[n], 0, offsets[n], values)
     end
 
     if n != 0:
         storage_property_len.write(property_id, offsets[n] - offsets[n - 1])
-        write_property_as_array(property_id, offsets[n - 1], offsets[n], 0, offsets[n] - offsets[n - 1], values)
+        _write_property_as_array(property_id, offsets[n - 1], offsets[n], 0, offsets[n] - offsets[n - 1], values)
     end
 
-    write_multiple_properties_as_array(names_len, names, n + 1, offsets_len, offsets, values_len, values, token_id)
+    _write_multiple_properties_as_array(names_len, names, n + 1, offsets_len, offsets, values_len, values, token_id)
 
     return ()
 end

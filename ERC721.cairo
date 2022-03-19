@@ -40,20 +40,15 @@ from openzeppelin.access.ownable import (
     Ownable_only_owner
 )
 
-from ERC721_Storage import (
-    ERC721_Storage_initializer,
-    ERC721_getPropertyFelt,
-    ERC721_getPropertyArray,
-    ERC721_getProperties,
-    ERC721_setPropertyFelt,
-    ERC721_setPropertyArray,
-    ERC721_setProperties
+from Storage import (
+    Storage_initializer,
+    Storage_get_property_felt,
+    Storage_get_property_array,
+    Storage_get_properties,
+    Storage_set_property_felt,
+    Storage_set_property_array,
+    Storage_set_properties
 )
-
-struct Array:
-    member len: felt
-    member arr: felt*
-end
 
 #
 # Constructor
@@ -71,7 +66,7 @@ func constructor{
     ):
     ERC721_initializer(name, symbol)
     ERC721_Enumerable_initializer()
-    ERC721_Storage_initializer()
+    Storage_initializer()
     Ownable_initializer(owner)
     return ()
 end
@@ -196,7 +191,7 @@ func getPropertyFelt{
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
     }(name: felt, tokenId: Uint256) -> (property: felt):
-    let (property: felt) = ERC721_getPropertyFelt(name, tokenId)
+    let (property: felt) = Storage_get_property_felt(name, tokenId)
     return (property)
 end
 
@@ -205,9 +200,9 @@ func getPropertyArray{
         syscall_ptr: felt*, 
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
-    }(name: felt, tokenId: Uint256) -> (property: Array):
-    let (property: felt) = ERC721_getPropertyArray(name, tokenId)
-    return (property)
+    }(name: felt, tokenId: Uint256) -> (property_len: felt, property: felt*):
+    let (property_len: felt, property: felt*) = Storage_get_property_array(name, tokenId)
+    return (property_len, property)
 end
 
 
@@ -216,9 +211,10 @@ func getProperties{
         syscall_ptr: felt*, 
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
-    }(names: felt*, names_len: felt, tokenId: Uint256) -> (properties: Array*):
-    let (properties: Array*) = ERC721_getProperties(names, names_len, tokenId)
-    return (properties)
+    }(names_len: felt, names: felt*, tokenId: Uint256) -> 
+    (offsets_len: felt, offsets: felt*, properties_len: felt, properties: felt*):
+    let (o_len: felt, o: felt*, p_len: felt, p: felt*) = Storage_get_properties(names_len, names, tokenId)
+    return (o_len, o, p_len, p)
 end
 
 #
@@ -313,11 +309,9 @@ func setPropertyFelt{
         pedersen_ptr: HashBuiltin*,
         syscall_ptr: felt*,
         range_check_ptr
-    }(name: felt,
-    token_id: Uint256,
-    value: felt):
+    }(name: felt, tokenId: Uint256, value: felt):
     Ownable_only_owner()
-    ERC721_setPropertyFelt(name, token_id, value)
+    Storage_set_property_felt(name, tokenId, value)
     return ()
 end
 
@@ -326,12 +320,9 @@ func setPropertyArray{
         pedersen_ptr: HashBuiltin*,
         syscall_ptr: felt*,
         range_check_ptr
-    }(name: felt,
-    token_id: Uint256,
-    value: felt*,
-    value_len: felt):
+    }(name: felt, tokenId: Uint256, value_len: felt, value: felt*):
     Ownable_only_owner()
-    ERC721_setPropertyArray(name, token_id, value, value_len)
+    Storage_set_property_array(name, tokenId, value_len, value)
     return ()
 end
 
@@ -341,11 +332,16 @@ func setProperties{
         pedersen_ptr: HashBuiltin*,
         syscall_ptr: felt*,
         range_check_ptr
-    }(names: felt*,
-    n: felt,
-    values: Array*,
-    token_id: Uint256):
+    }(
+        names_len: felt,
+        names: felt*,
+        tokenId: Uint256,
+        offsets_len: felt,
+        offsets: felt*,
+        values_len: felt,
+        values: felt*
+    ):
     Ownable_only_owner()
-    ERC721_setProperties(names, n, values, token_id)
+    Storage_set_properties(names_len, names, tokenId, offsets_len, offsets, values_len, values)
     return ()
 end

@@ -1,4 +1,4 @@
-MAX_LEN_FELT = 29
+MAX_LEN_FELT = 15
 
 
 def str_to_felt(text):
