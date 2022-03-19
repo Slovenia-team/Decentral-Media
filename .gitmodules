@@ -1,3 +1,6 @@
 [submodule "cairo-contracts"]
 	path = cairo-contracts
 	url = https://github.com/OpenZeppelin/cairo-contracts.git
+[submodule "starknet-erc721-storage"]
+	path = starknet_erc721_storage
+	url = https://github.com/Slovenia-team/starknet-erc721-storage.git

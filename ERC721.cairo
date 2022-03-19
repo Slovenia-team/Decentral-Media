@@ -40,7 +40,7 @@ from openzeppelin.access.ownable import (
     Ownable_only_owner
 )
 
-from Storage import (
+from starknet_erc721_storage.Storage import (
     Storage_initializer,
     Storage_get_property_felt,
     Storage_get_property_array,

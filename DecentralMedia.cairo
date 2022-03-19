@@ -12,7 +12,7 @@ from starkware.cairo.common.uint256 import Uint256
 
 from utils.DecentralMediaHelper import (User, deserialize, Array)
 from utils.Array import concat_arr
-from IERC721 import IERC721
+from starknet_erc721_storage.IERC721 import IERC721
 
 const USER_ERC721 = 1
 const CONTENT_ERC721 = 2
