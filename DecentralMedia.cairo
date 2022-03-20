@@ -12,7 +12,8 @@ from starkware.cairo.common.uint256 import Uint256
 
 from utils.DecentralMediaHelper import (User, deserialize, Array)
 from utils.Array import concat_arr
-from starknet_erc721_storage.IERC721 import IERC721
+from starknet_erc721_storage.IStorage import IStorage
+from IERC721 import IERC721
 
 const USER_ERC721 = 1
 const CONTENT_ERC721 = 2
@@ -112,7 +113,7 @@ func get_user{
     assert [names + 9] = 'sum_ratings'
     assert [names + 10] = 'created_at'
 
-    let (offsets_len, offsets, properties_len, properties) = IERC721.getProperties(contract, 11, names, token_id)
+    let (offsets_len, offsets, properties_len, properties) = IStorage.getProperties(contract, 11, names, token_id)
     let (user_data_len: felt, user_data: Array*) = deserialize(offsets_len, offsets, properties_len, properties)
 
     return (user_data[0].len, user_data[0].arr,
@@ -190,7 +191,7 @@ func create_user{
     let (values_len, values) = concat_arr(values_len, values, social_link_len, social_link)
     let (values_len, values) = concat_arr(values_len, values, 1, timestamp_arr)
 
-    IERC721.setProperties(contract, 6, names, token_id, 6, offsets, values_len, values)
+    IStorage.setProperties(contract, 6, names, token_id, 6, offsets, values_len, values)
 
     user_counter.write(counter + 1)
     return ()
