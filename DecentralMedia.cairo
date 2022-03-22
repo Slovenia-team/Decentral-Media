@@ -135,17 +135,17 @@ func create_user{
     ecdsa_ptr : SignatureBuiltin*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
-    username_len : felt,
-    username : felt*,
-    image_len : felt,
-    image : felt*,
-    background_image_len : felt,
-    background_image : felt*,
-    description_len : felt,
-    description : felt*,
-    social_link_len : felt,
-    social_link : felt*,
-    nonce : felt):
+    username_len: felt,
+    username: felt*,
+    image_len: felt,
+    image: felt*,
+    background_image_len: felt,
+    background_image: felt*,
+    description_len: felt,
+    description: felt*,
+    social_link_len: felt,
+    social_link: felt*,
+    nonce: felt):
     alloc_locals
 
     check_on()
@@ -194,6 +194,62 @@ func create_user{
     IStorage.setProperties(contract, 6, names, token_id, 6, offsets, values_len, values)
 
     user_counter.write(counter + 1)
+    return ()
+end
+
+@external
+func update_user{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    username_len: felt,
+    username: felt*,
+    image_len: felt,
+    image: felt*,
+    background_image_len: felt,
+    background_image: felt*,
+    description_len: felt,
+    description: felt*,
+    social_link_len: felt,
+    social_link: felt*,
+    nonce: felt):
+    alloc_locals
+
+    check_on()
+
+    let (caller) = get_caller_address()
+    let inputs : felt* = alloc()
+    inputs[0] = username
+    inputs[1] = nonce
+    verify_inputs_by_signature(caller, 2, inputs)
+
+    # TODO: If we are filtering by unique usernames, create storage variable for usernames and add assert here
+
+    let (contract) = erc721_contract.read(contract=USER_ERC721)
+
+    let (local names: felt*) = alloc()
+    assert [names] = 'username'
+    assert [names + 1] = 'image'
+    assert [names + 2] = 'background_image'
+    assert [names + 3] = 'description'
+    assert [names + 4] = 'social_link'
+
+    let (local offsets: felt*) = alloc()
+    assert [offsets] = username_len
+    assert [offsets + 1] = offsets[0] + image_len
+    assert [offsets + 2] = offsets[1] + background_image_len
+    assert [offsets + 3] = offsets[2] + description_len
+    assert [offsets + 4] = offsets[3] + social_link_len
+
+    let (values_len, values) = concat_arr(username_len, username, image_len, image)
+    let (values_len, values) = concat_arr(values_len, values, background_image_len, background_image)
+    let (values_len, values) = concat_arr(values_len, values, description_len, description)
+    let (values_len, values) = concat_arr(values_len, values, social_link_len, social_link)
+
+    IStorage.setProperties(contract, 5, names, token_id, 5, offsets, values_len, values)
+
     return ()
 end
 
