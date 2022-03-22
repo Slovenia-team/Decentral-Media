@@ -8,15 +8,20 @@ from starkware.cairo.common.math import assert_nn, assert_not_zero, unsigned_div
 from starkware.cairo.common.signature import verify_ecdsa_signature
 from starkware.starknet.common.messages import send_message_to_l1
 from starkware.starknet.common.syscalls import get_tx_signature, get_contract_address, get_block_timestamp, get_caller_address
-from starkware.cairo.common.uint256 import Uint256
+from starkware.cairo.common.uint256 import (Uint256, uint256_eq)
 
 from utils.DecentralMediaHelper import (User, deserialize, Array)
-from utils.Array import concat_arr
+from utils.Array import (concat_arr, array_includes)
 from starknet_erc721_storage.IStorage import IStorage
 from IERC721 import IERC721
 
 const USER_ERC721 = 1
 const CONTENT_ERC721 = 2
+
+
+#
+# Storage
+#
 
 @storage_var
 func admin() -> (adm : felt):
@@ -39,6 +44,10 @@ func user_counter() -> (token_id : felt):
 end
 
 
+#
+# Constructor
+#
+
 @constructor
 func constructor{
     syscall_ptr : felt*,
@@ -50,6 +59,10 @@ func constructor{
     return ()
 end
 
+
+#
+# Getters
+#
 
 @view
 func is_pause{
@@ -128,6 +141,11 @@ func get_user{
             user_data[9].arr[0],
             user_data[10].arr[0])
 end
+
+
+#
+# Externals
+#
 
 @external
 func create_user{
@@ -254,6 +272,46 @@ func update_user{
 end
 
 @external
+func follow{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    creator_token_id: Uint256,
+    nonce: felt):
+    alloc_locals
+
+    check_on()
+
+    assert creator_token_id_felt = creator_token_id.high * (2 ** 128) + creator_token_id.low
+
+    let (caller) = get_caller_address()
+    let inputs : felt* = alloc()
+    assert inputs[0] = creator_token_id_felt
+    assert inputs[1] = nonce
+    verify_inputs_by_signature(caller, 2, inputs)
+
+    let (contract) = erc721_contract.read(contract=USER_ERC721)
+
+    let (token_id: Uint256) = user_token_id.read(caller)
+    let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
+    array_includes(following_len, following, creator_token_id_felt)
+    let (local new_following: felt*) = alloc()
+    assert [new_following] = creator_token_id_felt
+    let (new_following_arr_len: felt, new_following_arr: felt*) = concat_arr(following_len, following, 1, new_following)
+
+    let (followers_len: felt, followers: felt*) = IStorage.getPropertyArray(contract, 'followers', creator_token_id)
+    let (local new_follower: felt*) = alloc()
+    assert [new_follower] = token_id.low
+    let (new_follower_arr_len: felt, new_follower_arr: felt*) = concat_arr(following_len, following, 1, new_follower)
+
+    IStorage.setPropertyArray(contract, 'following', new_following_arr_len, new_following_arr)
+    IStorage.setPropertyArray(contract, 'followers', new_follower_arr_len, new_follower_arr)
+
+    return ()
+end
+
+@external
 func set_pause{
     syscall_ptr : felt*,
     ecdsa_ptr : SignatureBuiltin*,
@@ -316,6 +374,11 @@ func set_content_erc721_contract{
 
     return ()
 end
+
+
+#
+# Internals
+#
 
 func check_on{
     syscall_ptr : felt*,

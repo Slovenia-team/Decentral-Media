@@ -2,6 +2,7 @@
 
 from starkware.cairo.common.memcpy import memcpy
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.math import assert_not_equal
 
 func concat_arr{range_check_ptr}(
         arr1_len: felt,
@@ -16,3 +17,19 @@ func concat_arr{range_check_ptr}(
     return (arr1_len + arr2_len, res)
 end
 
+func array_includes{range_check_ptr}(
+    arr_len: felt,
+    arr: felt*,
+    num: felt
+    ):
+
+    if arr_len == 0:
+        return ()
+    end
+    
+    assert_not_equal(arr[0], num)
+
+    array_includes(arr_len - 1, arr + 1, num)
+
+    return ()
+end
