@@ -2,6 +2,7 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.uint256 import Uint256
 from utils.Array import concat_arr
 
 struct Array:
@@ -89,4 +90,13 @@ func loop_extract_array{
     loop_extract_array(values_len, values, offset_from + 1, offset_to, res_len - 1, res + 1)
 
     return (res_len, res)
+end
+
+func Uint256_to_felt{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    num: Uint256) -> (num_felt: felt):
+
+    return (num.high * (2 ** 128) + num.low)
 end

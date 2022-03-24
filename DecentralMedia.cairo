@@ -10,8 +10,8 @@ from starkware.starknet.common.messages import send_message_to_l1
 from starkware.starknet.common.syscalls import get_tx_signature, get_contract_address, get_block_timestamp, get_caller_address
 from starkware.cairo.common.uint256 import (Uint256, uint256_eq)
 
-from utils.DecentralMediaHelper import (User, deserialize, Array)
-from utils.Array import (concat_arr, array_includes)
+from utils.DecentralMediaHelper import (User, deserialize, Array, Uint256_to_felt)
+from utils.Array import (concat_arr, assert_array_includes, array_remove_element)
 from starknet_erc721_storage.IStorage import IStorage
 from IERC721 import IERC721
 
@@ -283,7 +283,7 @@ func follow{
 
     check_on()
 
-    assert creator_token_id_felt = creator_token_id.high * (2 ** 128) + creator_token_id.low
+    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
 
     let (caller) = get_caller_address()
     let inputs : felt* = alloc()
@@ -292,21 +292,59 @@ func follow{
     verify_inputs_by_signature(caller, 2, inputs)
 
     let (contract) = erc721_contract.read(contract=USER_ERC721)
-
     let (token_id: Uint256) = user_token_id.read(caller)
+    let (token_id_felt: felt) = Uint256_to_felt(token_id)
+
     let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
-    array_includes(following_len, following, creator_token_id_felt)
+    assert_array_includes(following_len, following, creator_token_id_felt)
     let (local new_following: felt*) = alloc()
     assert [new_following] = creator_token_id_felt
     let (new_following_arr_len: felt, new_following_arr: felt*) = concat_arr(following_len, following, 1, new_following)
 
     let (followers_len: felt, followers: felt*) = IStorage.getPropertyArray(contract, 'followers', creator_token_id)
     let (local new_follower: felt*) = alloc()
-    assert [new_follower] = token_id.low
+    assert [new_follower] = token_id_felt
     let (new_follower_arr_len: felt, new_follower_arr: felt*) = concat_arr(following_len, following, 1, new_follower)
 
-    IStorage.setPropertyArray(contract, 'following', new_following_arr_len, new_following_arr)
-    IStorage.setPropertyArray(contract, 'followers', new_follower_arr_len, new_follower_arr)
+    IStorage.setPropertyArray(contract, 'following', token_id, new_following_arr_len, new_following_arr)
+    IStorage.setPropertyArray(contract, 'followers', creator_token_id, new_follower_arr_len, new_follower_arr)
+
+    return ()
+end
+
+@external
+func unfollow{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    creator_token_id: Uint256,
+    nonce: felt):
+    alloc_locals
+
+    check_on()
+
+    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
+
+    let (caller) = get_caller_address()
+    let inputs : felt* = alloc()
+    assert inputs[0] = creator_token_id_felt
+    assert inputs[1] = nonce
+    verify_inputs_by_signature(caller, 2, inputs)
+
+    let (contract) = erc721_contract.read(contract=USER_ERC721)
+    let (token_id: Uint256) = user_token_id.read(caller)
+    let (token_id_felt: felt) = Uint256_to_felt(token_id)
+
+    let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
+    assert_array_includes(following_len, following, creator_token_id_felt)
+    array_remove_element(following_len, following, creator_token_id_felt, 0)
+
+    let (followers_len: felt, followers: felt*) = IStorage.getPropertyArray(contract, 'followers', creator_token_id)
+    array_remove_element(followers_len, followers, token_id_felt, 0)
+
+    IStorage.setPropertyArray(contract, 'following', token_id, following_len, following)
+    IStorage.setPropertyArray(contract, 'followers', creator_token_id, followers_len, followers)
 
     return ()
 end

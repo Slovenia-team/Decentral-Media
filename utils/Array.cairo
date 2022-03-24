@@ -17,7 +17,7 @@ func concat_arr{range_check_ptr}(
     return (arr1_len + arr2_len, res)
 end
 
-func array_includes{range_check_ptr}(
+func assert_array_includes{range_check_ptr}(
     arr_len: felt,
     arr: felt*,
     num: felt
@@ -29,7 +29,32 @@ func array_includes{range_check_ptr}(
     
     assert_not_equal(arr[0], num)
 
-    array_includes(arr_len - 1, arr + 1, num)
+    assert_array_includes(arr_len - 1, arr + 1, num)
+
+    return ()
+end
+
+func array_remove_element{range_check_ptr}(
+    arr_len: felt,
+    arr: felt*,
+    el: felt,
+    found: felt
+    ):
+
+    if arr_len == 0:
+        return ()
+    end
+
+    if found == 1:
+        assert arr[0] = arr[1]
+    end
+
+    if arr[0] == el:
+        assert arr[0] = arr[1]
+        assert arr_len = arr_len - 1
+    end
+    
+    array_remove_element(arr_len - 1, arr + 1, el, 0)
 
     return ()
 end
