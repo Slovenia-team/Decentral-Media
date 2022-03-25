@@ -297,17 +297,13 @@ func follow{
 
     let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
     assert_array_includes(following_len, following, creator_token_id_felt)
-    let (local new_following: felt*) = alloc()
-    assert [new_following] = creator_token_id_felt
-    let (new_following_arr_len: felt, new_following_arr: felt*) = concat_arr(following_len, following, 1, new_following)
+    assert following[following_len] = creator_token_id_felt
 
     let (followers_len: felt, followers: felt*) = IStorage.getPropertyArray(contract, 'followers', creator_token_id)
-    let (local new_follower: felt*) = alloc()
-    assert [new_follower] = token_id_felt
-    let (new_follower_arr_len: felt, new_follower_arr: felt*) = concat_arr(following_len, following, 1, new_follower)
+    assert followers[followers_len] = token_id_felt
 
-    IStorage.setPropertyArray(contract, 'following', token_id, new_following_arr_len, new_following_arr)
-    IStorage.setPropertyArray(contract, 'followers', creator_token_id, new_follower_arr_len, new_follower_arr)
+    IStorage.setPropertyArray(contract, 'following', token_id, following_len, following)
+    IStorage.setPropertyArray(contract, 'followers', creator_token_id, followers_len, followers)
 
     return ()
 end
