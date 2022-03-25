@@ -296,14 +296,14 @@ func follow{
     let (token_id_felt: felt) = Uint256_to_felt(token_id)
 
     let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
-    assert_array_includes(following_len, following, creator_token_id_felt)
+    assert_array_includes(following_len, following, creator_token_id_felt, 1)
     assert following[following_len] = creator_token_id_felt
 
     let (followers_len: felt, followers: felt*) = IStorage.getPropertyArray(contract, 'followers', creator_token_id)
     assert followers[followers_len] = token_id_felt
 
-    IStorage.setPropertyArray(contract, 'following', token_id, following_len, following)
-    IStorage.setPropertyArray(contract, 'followers', creator_token_id, followers_len, followers)
+    IStorage.setPropertyArray(contract, 'following', token_id, following_len + 1, following)
+    IStorage.setPropertyArray(contract, 'followers', creator_token_id, followers_len + 1, followers)
 
     return ()
 end
@@ -333,14 +333,59 @@ func unfollow{
     let (token_id_felt: felt) = Uint256_to_felt(token_id)
 
     let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
-    assert_array_includes(following_len, following, creator_token_id_felt)
+    assert_array_includes(following_len, following, creator_token_id_felt, 1)
     array_remove_element(following_len, following, creator_token_id_felt, 0)
 
     let (followers_len: felt, followers: felt*) = IStorage.getPropertyArray(contract, 'followers', creator_token_id)
     array_remove_element(followers_len, followers, token_id_felt, 0)
 
-    IStorage.setPropertyArray(contract, 'following', token_id, following_len, following)
-    IStorage.setPropertyArray(contract, 'followers', creator_token_id, followers_len, followers)
+    IStorage.setPropertyArray(contract, 'following', token_id, following_len - 1, following)
+    IStorage.setPropertyArray(contract, 'followers', creator_token_id, followers_len - 1, followers)
+
+    return ()
+end
+
+@external
+func rate{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    creator_token_id: Uint256,
+    rating: felt,
+    nonce: felt):
+    alloc_locals
+
+    check_on()
+
+    assert_nn(5 - rating)
+    assert_nn(rating - 1)
+
+    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
+
+    let (caller) = get_caller_address()
+    let inputs : felt* = alloc()
+    assert inputs[0] = creator_token_id_felt
+    assert inputs[1] = rating
+    assert inputs[2] = nonce
+    verify_inputs_by_signature(caller, 3, inputs)
+
+    let (contract) = erc721_contract.read(contract=USER_ERC721)
+    let (token_id: Uint256) = user_token_id.read(caller)
+    let (token_id_felt: felt) = Uint256_to_felt(token_id)
+
+    let (rated_len: felt, rated: felt*) = IStorage.getPropertyArray(contract, 'rated', token_id)
+    assert_array_includes(rated_len, rated, creator_token_id_felt, 2)
+    assert rated[rated_len] = creator_token_id_felt
+    assert rated[rated_len + 1] = rating
+
+    IStorage.setPropertyArray(contract, 'rated', token_id, rated_len + 2, rated)
+
+    let (ratings_len: felt, ratings: felt*) = IStorage.getPropertyArray(contract, 'rating', creator_token_id)
+    assert ratings[0] = ratings[0] + 1      # num_ratings
+    assert ratings[1] = ratings[1] + rating # sum_ratings
+
+    IStorage.setPropertyArray(contract, 'rating', creator_token_id, ratings_len, ratings)
 
     return ()
 end

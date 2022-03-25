@@ -20,7 +20,8 @@ end
 func assert_array_includes{range_check_ptr}(
     arr_len: felt,
     arr: felt*,
-    num: felt
+    num: felt,
+    step: felt
     ):
 
     if arr_len == 0:
@@ -29,7 +30,7 @@ func assert_array_includes{range_check_ptr}(
     
     assert_not_equal(arr[0], num)
 
-    assert_array_includes(arr_len - 1, arr + 1, num)
+    assert_array_includes(arr_len - step, arr + step, num, step)
 
     return ()
 end
