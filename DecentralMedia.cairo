@@ -18,6 +18,11 @@ from UserFunctions import (
     User_setContract
 )
 
+from ContentFunctions import (
+    Content_getContentTokenId,
+    Content_getContent
+)
+
 #
 # Storage
 #
@@ -96,6 +101,49 @@ func get_user{
     created_at: felt) = User_getUser(address)
 
     return (username_len, username, image_len, image, background_image_len, background_image, description_len, description, social_link_len, social_link, following_len, following, followers_len, followers, contents_len, contents, num_ratings, sum_ratings, created_at)
+end
+
+@view
+func get_content_token_id{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    address : felt) -> (
+    token_id : Uint256):
+    let (token_id: Uint256) = Content_getContentTokenId(address)
+    return (token_id)
+end
+
+@view
+func get_content{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    address : felt) -> (
+    content_len: felt,
+    content: felt*,
+    tags_len: felt,
+    tags: felt*,
+    authors_len: felt,
+    authors: felt*,
+    liked_by_len: felt,
+    liked_by: felt*,
+    likes_len: felt,
+    likes: felt*,
+    views: felt,
+    created_at: felt,
+    public: felt):
+
+    let (content_len: felt, content: felt*,
+    tags_len: felt, tags: felt*,
+    authors_len: felt, authors: felt*,
+    liked_by_len: felt, liked_by: felt*,
+    likes_len: felt, likes: felt*,
+    views: felt,
+    created_at: felt,
+    public: felt) = Content_getContent(address)
+
+    return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes_len, likes, views, created_at, public)
 end
 
 
