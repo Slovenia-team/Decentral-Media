@@ -4,11 +4,11 @@ from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.starknet.common.syscalls import get_tx_signature, get_contract_address, get_block_timestamp, get_caller_address
 from starkware.cairo.common.uint256 import Uint256, uint256_eq
-from starkware.cairo.common.math import assert_nn, split_felt
+from starkware.cairo.common.math import assert_nn
 
 
 from utils.Array import concat_arr, assert_array_includes, array_remove_element
-from utils.DecentralMediaHelper import deserialize, Array, Uint256_to_felt
+from utils.DecentralMediaHelper import deserialize, Array, Uint256_to_felt, felt_to_Uint256
 from utils.utils import verify_inputs_by_signature
 from starknet_erc721_storage.IStorage import IStorage
 from IERC721 import IERC721
@@ -127,17 +127,20 @@ func User_createUser{
 
     let (caller) = get_caller_address()
     let inputs : felt* = alloc()
-    inputs[0] = username
-    inputs[1] = nonce
-    verify_inputs_by_signature(caller, 2, inputs)
+    inputs[0] = username_len
+    inputs[1] = image_len
+    inputs[2] = background_image_len
+    inputs[3] = description_len
+    inputs[4] = social_link_len
+    inputs[5] = nonce
+    verify_inputs_by_signature(caller, 6, inputs)
 
     # TODO: If we are filtering by unique usernames, create storage variable for usernames and add assert here
 
     let (counter) = user_counter.read()
     let (contract) = erc721_contract.read()
     let (timestamp) = get_block_timestamp()
-    let (low : felt, high : felt) = split_felt(counter)
-    let token_id : Uint256 = Uint256(low,high)
+    let token_id: Uint256 = felt_to_Uint256(counter)
 
     IERC721.mint(contract, caller, token_id)
 
@@ -194,8 +197,13 @@ func User_updateUser{
     let (caller) = get_caller_address()
     let inputs : felt* = alloc()
     inputs[0] = username
-    inputs[1] = nonce
-    verify_inputs_by_signature(caller, 2, inputs)
+    inputs[1] = username_len
+    inputs[2] = image_len
+    inputs[3] = background_image_len
+    inputs[4] = description_len
+    inputs[5] = social_link_len
+    inputs[6] = nonce
+    verify_inputs_by_signature(caller, 7, inputs)
 
     # TODO: If we are filtering by unique usernames, create storage variable for usernames and add assert here
 
@@ -346,9 +354,10 @@ func User_setContract{
     alloc_locals
 
     let inputs : felt* = alloc()
-    inputs[0] = contract
-    inputs[1] = nonce
-    verify_inputs_by_signature(adm, 2, inputs)
+    inputs[0] = adm
+    inputs[1] = contract
+    inputs[2] = nonce
+    verify_inputs_by_signature(adm, 3, inputs)
 
     erc721_contract.write(contract)
 

@@ -20,7 +20,8 @@ from UserFunctions import (
 
 from ContentFunctions import (
     Content_getContentTokenId,
-    Content_getContent
+    Content_getContent,
+    Content_createContent
 )
 
 #
@@ -241,5 +242,23 @@ func set_user_erc721_contract{
     nonce : felt):
     let (adm) = admin.read()
     User_setContract(adm, contract, nonce)
+    return ()
+end
+
+@external
+func create_content{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    content_len: felt,
+    content: felt*,
+    tags_len: felt,
+    tags: felt*,
+    authors_len: felt,
+    authors: felt*,
+    public: felt,
+    nonce: felt):
+    Content_createContent(content_len, content, tags_len, tags, authors_len, authors, public, nonce)
     return ()
 end
