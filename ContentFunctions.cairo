@@ -56,8 +56,7 @@ func Content_getContent{
     authors: felt*,
     liked_by_len: felt,
     liked_by: felt*,
-    likes_len: felt,
-    likes: felt*,
+    likes: felt,
     views: felt,
     public: felt,
     created_at: felt):
@@ -83,7 +82,7 @@ func Content_getContent{
             data[1].len, data[1].arr,
             data[2].len, data[2].arr,
             data[3].len, data[3].arr,
-            data[4].len, data[4].arr,
+            data[4].arr[0],
             data[5].arr[0],
             data[6].arr[0],
             data[7].arr[0])
@@ -106,6 +105,7 @@ func Content_createContent{
     authors_len: felt,
     authors: felt*,
     public: felt,
+    creator_token_id: Uint256,
     nonce: felt):
     alloc_locals
 
@@ -152,6 +152,98 @@ func Content_createContent{
 
     IStorage.setProperties(contract, 5, names, token_id, 5, offsets, values_len, values)
 
+    let (token_id_felt: felt) = Uint256_to_felt(token_id)
+    let (user_contents_len: felt, user_contents: felt*) = IStorage.getPropertyArray(contract, 'contents', creator_token_id)
+    assert user_contents[user_contents_len] = token_id_felt
+    IStorage.setPropertyArray(contract, 'contents', creator_token_id, user_contents_len + 1, user_contents)
+
     content_counter.write(counter + 1)
+    return ()
+end
+
+func Content_updateContent{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    public: felt,
+    nonce: felt):
+    alloc_locals
+
+    let (caller) = get_caller_address()
+    let inputs : felt* = alloc()
+    inputs[0] = public
+    inputs[1] = nonce
+    verify_inputs_by_signature(caller, 2, inputs)
+
+    let (contract) = erc721_contract.read()
+
+    IStorage.setPropertyFelt(contract, 'public', token_id, public)
+
+    return ()
+end
+
+func Content_like{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    user_token_id: Uint256,
+    nonce: felt):
+    alloc_locals
+
+    let (token_id_felt: felt) = Uint256_to_felt(token_id)
+
+    let (caller) = get_caller_address()
+    let inputs : felt* = alloc()
+    assert inputs[0] = token_id_felt
+    assert inputs[1] = nonce
+    verify_inputs_by_signature(caller, 2, inputs)
+
+    let (contract) = erc721_contract.read()
+    let (user_token_id_felt: felt) = Uint256_to_felt(user_token_id)
+
+    let (liked_by_len: felt, liked_by: felt*) = IStorage.getPropertyArray(contract, 'liked_by', token_id)
+    assert_array_includes(liked_by_len, liked_by, user_token_id_felt, 1)
+    assert liked_by[liked_by_len] = user_token_id_felt
+    IStorage.setPropertyArray(contract, 'liked_by', token_id, liked_by_len + 1, liked_by)
+
+    let (likes: felt) = IStorage.getPropertyFelt(contract, 'likes', token_id)
+    IStorage.setPropertyFelt(contract, 'likes', token_id, likes + 1)
+
+    return ()
+end
+
+func Content_dislike{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    user_token_id: Uint256,
+    nonce: felt):
+    alloc_locals
+
+    let (token_id_felt: felt) = Uint256_to_felt(token_id)
+
+    let (caller) = get_caller_address()
+    let inputs : felt* = alloc()
+    assert inputs[0] = token_id_felt
+    assert inputs[1] = nonce
+    verify_inputs_by_signature(caller, 2, inputs)
+
+    let (contract) = erc721_contract.read()
+    let (user_token_id_felt: felt) = Uint256_to_felt(user_token_id)
+
+    let (liked_by_len: felt, liked_by: felt*) = IStorage.getPropertyArray(contract, 'liked_by', token_id)
+    assert_array_includes(liked_by_len, liked_by, user_token_id_felt, 1)
+    array_remove_element(liked_by_len, liked_by, user_token_id_felt, 0)
+    IStorage.setPropertyArray(contract, 'liked_by', token_id, liked_by_len - 1, liked_by)
+    
+    let (likes: felt) = IStorage.getPropertyFelt(contract, 'likes', token_id)
+    IStorage.setPropertyFelt(contract, 'likes', token_id, likes - 1)
+
     return ()
 end

@@ -4,6 +4,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.cairo.common.uint256 import Uint256
+from starkware.starknet.common.syscalls import get_caller_address
 
 from utils.utils import verify_inputs_by_signature
 
@@ -21,7 +22,10 @@ from UserFunctions import (
 from ContentFunctions import (
     Content_getContentTokenId,
     Content_getContent,
-    Content_createContent
+    Content_createContent,
+    Content_updateContent,
+    Content_like,
+    Content_dislike
 )
 
 #
@@ -129,8 +133,7 @@ func get_content{
     authors: felt*,
     liked_by_len: felt,
     liked_by: felt*,
-    likes_len: felt,
-    likes: felt*,
+    likes: felt,
     views: felt,
     created_at: felt,
     public: felt):
@@ -139,12 +142,12 @@ func get_content{
     tags_len: felt, tags: felt*,
     authors_len: felt, authors: felt*,
     liked_by_len: felt, liked_by: felt*,
-    likes_len: felt, likes: felt*,
+    likes: felt,
     views: felt,
     created_at: felt,
     public: felt) = Content_getContent(address)
 
-    return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes_len, likes, views, created_at, public)
+    return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes, views, created_at, public)
 end
 
 
@@ -259,6 +262,49 @@ func create_content{
     authors: felt*,
     public: felt,
     nonce: felt):
-    Content_createContent(content_len, content, tags_len, tags, authors_len, authors, public, nonce)
+    let (caller) = get_caller_address()
+    let (creator_token_id: Uint256) = User_getUserTokenId(caller)
+    Content_createContent(content_len, content, tags_len, tags, authors_len, authors, public, creator_token_id, nonce)
+    return ()
+end
+
+@external
+func update_content{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    public: felt,
+    nonce: felt):
+    Content_updateContent(token_id, public, nonce)
+    return ()
+end
+
+@external
+func like{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    nonce: felt):
+    let (caller) = get_caller_address()
+    let (user_token_id: Uint256) = User_getUserTokenId(caller)
+    Content_like(token_id, user_token_id, nonce)
+    return ()
+end
+
+@external
+func dislike{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    nonce: felt):
+    let (caller) = get_caller_address()
+    let (user_token_id: Uint256) = User_getUserTokenId(caller)
+    Content_dislike(token_id, user_token_id, nonce)
     return ()
 end

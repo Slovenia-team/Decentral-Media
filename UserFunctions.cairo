@@ -171,6 +171,7 @@ func User_createUser{
 
     IStorage.setProperties(contract, 6, names, token_id, 6, offsets, values_len, values)
 
+    user_token_id.write(caller, token_id)
     user_counter.write(counter + 1)
     return ()
 end
@@ -196,14 +197,13 @@ func User_updateUser{
 
     let (caller) = get_caller_address()
     let inputs : felt* = alloc()
-    inputs[0] = username
-    inputs[1] = username_len
-    inputs[2] = image_len
-    inputs[3] = background_image_len
-    inputs[4] = description_len
-    inputs[5] = social_link_len
-    inputs[6] = nonce
-    verify_inputs_by_signature(caller, 7, inputs)
+    inputs[0] = username_len
+    inputs[1] = image_len
+    inputs[2] = background_image_len
+    inputs[3] = description_len
+    inputs[4] = social_link_len
+    inputs[5] = nonce
+    verify_inputs_by_signature(caller, 6, inputs)
 
     # TODO: If we are filtering by unique usernames, create storage variable for usernames and add assert here
 
