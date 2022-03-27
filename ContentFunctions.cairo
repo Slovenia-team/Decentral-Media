@@ -65,6 +65,9 @@ func Content_getContent{
     let (token_id) = content_token_id.read(address=address)
     let (contract) = erc721_contract.read()
 
+    let (views: felt) = IStorage.getPropertyFelt(contract, 'views', token_id)
+    IStorage.setPropertyFelt(contract, 'views', token_id, views + 1)
+
     let names : felt* = alloc()
     assert [names] = 'content'
     assert [names + 1] = 'tags'
