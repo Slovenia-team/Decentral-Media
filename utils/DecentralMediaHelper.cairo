@@ -58,17 +58,17 @@ func loop_extract{
     res: Array*) -> (res_len: felt, res: Array*):
     alloc_locals
 
-    if offsets[0] + offsets[1] == 0:
-        return (res_len, res)
-    end
-
     let (local arr: felt*) = alloc()
     let (arr_len, arr) = loop_extract_array(values_len, values, offsets[0], offsets[1], 0, arr)
     assert [res] = Array(arr_len, arr)
 
-    loop_extract(offsets_len - 1, offsets + 1, values_len, values, res_len - 1, res + 1)
+    if offsets_len == 2:
+        return (offsets_len - 1, res)
+    end
 
-    return (res_len, res)
+    loop_extract(offsets_len - 1, offsets + 1, values_len, values, res_len + 1, res + Array.SIZE)
+
+    return (offsets_len - 1, res)
 end
 
 func loop_extract_array{
@@ -88,9 +88,9 @@ func loop_extract_array{
     end
 
     assert [res] = values[offset_from]
-    loop_extract_array(values_len, values, offset_from + 1, offset_to, res_len - 1, res + 1)
+    loop_extract_array(values_len, values, offset_from + 1, offset_to, res_len + 1, res + 1)
 
-    return (res_len, res)
+    return (offset_to - offset_from, res)
 end
 
 func Uint256_to_felt{

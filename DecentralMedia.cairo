@@ -25,7 +25,8 @@ from ContentFunctions import (
     Content_createContent,
     Content_updateContent,
     Content_like,
-    Content_dislike
+    Content_dislike,
+    Content_setContract
 )
 
 #
@@ -89,8 +90,10 @@ func get_user{
     followers: felt*,
     contents_len: felt,
     contents: felt*,
-    num_ratings: felt,
-    sum_ratings: felt,
+    num_ratings_len: felt,
+    num_ratings: felt*,
+    sum_ratings_len: felt,
+    sum_ratings: felt*,
     created_at: felt):
 
     let (username_len: felt, username: felt*,
@@ -101,11 +104,11 @@ func get_user{
     following_len: felt, following: felt*,
     followers_len: felt, followers: felt*,
     contents_len: felt, contents: felt*,
-    num_ratings: felt,
-    sum_ratings: felt,
+    num_ratings_len: felt, num_ratings: felt*,
+    sum_ratings_len: felt, sum_ratings: felt*,
     created_at: felt) = User_getUser(address)
 
-    return (username_len, username, image_len, image, background_image_len, background_image, description_len, description, social_link_len, social_link, following_len, following, followers_len, followers, contents_len, contents, num_ratings, sum_ratings, created_at)
+    return (username_len, username, image_len, image, background_image_len, background_image, description_len, description, social_link_len, social_link, following_len, following, followers_len, followers, contents_len, contents, num_ratings_len, num_ratings, sum_ratings_len, sum_ratings, created_at)
 end
 
 @view
@@ -245,6 +248,19 @@ func set_user_erc721_contract{
     nonce : felt):
     let (adm) = admin.read()
     User_setContract(adm, contract, nonce)
+    return ()
+end
+
+@external
+func set_content_erc721_contract{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    contract : felt,
+    nonce : felt):
+    let (adm) = admin.read()
+    Content_setContract(adm, contract, nonce)
     return ()
 end
 

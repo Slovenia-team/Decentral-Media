@@ -37,7 +37,8 @@ from openzeppelin.introspection.ERC165 import ERC165_supports_interface
 
 from openzeppelin.access.ownable import (
     Ownable_initializer,
-    Ownable_only_owner
+    Ownable_only_owner,
+    Ownable_transfer_ownership
 )
 
 from starknet_erc721_storage.Storage import (
@@ -302,6 +303,16 @@ func setTokenURI{
     Ownable_only_owner()
     ERC721_setTokenURI(tokenId, tokenURI)
     return ()
+end
+
+@external
+func transfer_ownership{
+        syscall_ptr : felt*, 
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr
+    }(new_owner: felt) -> (new_owner: felt):
+    Ownable_transfer_ownership(new_owner)
+    return (new_owner=new_owner)
 end
 
 @external

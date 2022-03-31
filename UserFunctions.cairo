@@ -65,8 +65,10 @@ func User_getUser{
     followers: felt*,
     contents_len: felt,
     contents: felt*,
-    num_ratings: felt,
-    sum_ratings: felt,
+    num_ratings_len: felt,
+    num_ratings: felt*,
+    sum_ratings_len: felt,
+    sum_ratings: felt*,
     created_at: felt):
     alloc_locals
 
@@ -97,8 +99,8 @@ func User_getUser{
             user_data[5].len, user_data[5].arr,
             user_data[6].len, user_data[6].arr,
             user_data[7].len, user_data[7].arr,
-            user_data[8].arr[0],
-            user_data[9].arr[0],
+            user_data[8].len, user_data[8].arr,
+            user_data[9].len, user_data[9].arr,
             user_data[10].arr[0])
 end
 
@@ -151,6 +153,8 @@ func User_createUser{
     assert [names + 3] = 'description'
     assert [names + 4] = 'social_link'
     assert [names + 5] = 'created_at'
+    assert [names + 6] = 'num_ratings'
+    assert [names + 7] = 'sum_ratings'
 
     let (local offsets: felt*) = alloc()
     assert [offsets] = username_len
@@ -159,17 +163,24 @@ func User_createUser{
     assert [offsets + 3] = offsets[2] + description_len
     assert [offsets + 4] = offsets[3] + social_link_len
     assert [offsets + 5] = offsets[4] + 1
+    assert [offsets + 6] = offsets[5] + 1
+    assert [offsets + 7] = offsets[6] + 1
 
     let (local timestamp_arr: felt*) = alloc()
     assert [timestamp_arr] = timestamp
+
+    let (local rating_arr: felt*) = alloc()
+    assert [rating_arr] = 0
 
     let (values_len, values) = concat_arr(username_len, username, image_len, image)
     let (values_len, values) = concat_arr(values_len, values, background_image_len, background_image)
     let (values_len, values) = concat_arr(values_len, values, description_len, description)
     let (values_len, values) = concat_arr(values_len, values, social_link_len, social_link)
     let (values_len, values) = concat_arr(values_len, values, 1, timestamp_arr)
+    let (values_len, values) = concat_arr(values_len, values, 1, rating_arr)
+    let (values_len, values) = concat_arr(values_len, values, 1, rating_arr)
 
-    IStorage.setProperties(contract, 6, names, token_id, 6, offsets, values_len, values)
+    IStorage.setProperties(contract, 8, names, token_id, 8, offsets, values_len, values)
 
     user_token_id.write(caller, token_id)
     user_counter.write(counter + 1)
@@ -354,10 +365,9 @@ func User_setContract{
     alloc_locals
 
     let inputs : felt* = alloc()
-    inputs[0] = adm
-    inputs[1] = contract
-    inputs[2] = nonce
-    verify_inputs_by_signature(adm, 3, inputs)
+    inputs[0] = contract
+    inputs[1] = nonce
+    verify_inputs_by_signature(adm, 2, inputs)
 
     erc721_contract.write(contract)
 

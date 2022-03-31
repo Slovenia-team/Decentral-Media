@@ -250,3 +250,23 @@ func Content_dislike{
 
     return ()
 end
+
+func Content_setContract{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    adm : felt,
+    contract : felt,
+    nonce : felt):
+    alloc_locals
+
+    let inputs : felt* = alloc()
+    inputs[0] = contract
+    inputs[1] = nonce
+    verify_inputs_by_signature(adm, 2, inputs)
+
+    erc721_contract.write(contract)
+
+    return ()
+end
