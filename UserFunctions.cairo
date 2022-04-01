@@ -65,10 +65,10 @@ func User_getUser{
     followers: felt*,
     contents_len: felt,
     contents: felt*,
-    num_ratings_len: felt,
-    num_ratings: felt*,
-    sum_ratings_len: felt,
-    sum_ratings: felt*,
+    rated_len: felt,
+    rated: felt*,
+    rating_len: felt,
+    rating: felt*,
     created_at: felt):
     alloc_locals
 
@@ -84,8 +84,8 @@ func User_getUser{
     assert [names + 5] = 'following'
     assert [names + 6] = 'followers'
     assert [names + 7] = 'contents'
-    assert [names + 8] = 'num_ratings'
-    assert [names + 9] = 'sum_ratings'
+    assert [names + 8] = 'rated'
+    assert [names + 9] = 'rating'
     assert [names + 10] = 'created_at'
 
     let (offsets_len, offsets, properties_len, properties) = IStorage.getProperties(contract, 11, names, token_id)
@@ -153,8 +153,7 @@ func User_createUser{
     assert [names + 3] = 'description'
     assert [names + 4] = 'social_link'
     assert [names + 5] = 'created_at'
-    assert [names + 6] = 'num_ratings'
-    assert [names + 7] = 'sum_ratings'
+    assert [names + 6] = 'rating'
 
     let (local offsets: felt*) = alloc()
     assert [offsets] = username_len
@@ -163,24 +162,23 @@ func User_createUser{
     assert [offsets + 3] = offsets[2] + description_len
     assert [offsets + 4] = offsets[3] + social_link_len
     assert [offsets + 5] = offsets[4] + 1
-    assert [offsets + 6] = offsets[5] + 1
-    assert [offsets + 7] = offsets[6] + 1
+    assert [offsets + 6] = offsets[5] + 2
 
     let (local timestamp_arr: felt*) = alloc()
     assert [timestamp_arr] = timestamp
 
     let (local rating_arr: felt*) = alloc()
     assert [rating_arr] = 0
+    assert [rating_arr + 1] = 0
 
     let (values_len, values) = concat_arr(username_len, username, image_len, image)
     let (values_len, values) = concat_arr(values_len, values, background_image_len, background_image)
     let (values_len, values) = concat_arr(values_len, values, description_len, description)
     let (values_len, values) = concat_arr(values_len, values, social_link_len, social_link)
     let (values_len, values) = concat_arr(values_len, values, 1, timestamp_arr)
-    let (values_len, values) = concat_arr(values_len, values, 1, rating_arr)
-    let (values_len, values) = concat_arr(values_len, values, 1, rating_arr)
+    let (values_len, values) = concat_arr(values_len, values, 2, rating_arr)
 
-    IStorage.setProperties(contract, 8, names, token_id, 8, offsets, values_len, values)
+    IStorage.setProperties(contract, 7, names, token_id, 7, offsets, values_len, values)
 
     user_token_id.write(caller, token_id)
     user_counter.write(counter + 1)
@@ -253,17 +251,15 @@ func User_follow{
     nonce: felt):
     alloc_locals
 
-    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
-
     let (caller) = get_caller_address()
     let inputs : felt* = alloc()
-    assert inputs[0] = creator_token_id_felt
-    assert inputs[1] = nonce
-    verify_inputs_by_signature(caller, 2, inputs)
+    assert inputs[0] = nonce
+    verify_inputs_by_signature(caller, 1, inputs)
 
     let (contract) = erc721_contract.read()
     let (token_id: Uint256) = user_token_id.read(caller)
     let (token_id_felt: felt) = Uint256_to_felt(token_id)
+    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
 
     let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
     assert_array_includes(following_len, following, creator_token_id_felt, 1)
@@ -287,17 +283,16 @@ func User_unfollow{
     nonce: felt):
     alloc_locals
 
-    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
 
     let (caller) = get_caller_address()
     let inputs : felt* = alloc()
-    assert inputs[0] = creator_token_id_felt
-    assert inputs[1] = nonce
-    verify_inputs_by_signature(caller, 2, inputs)
+    assert inputs[0] = nonce
+    verify_inputs_by_signature(caller, 1, inputs)
 
     let (contract) = erc721_contract.read()
     let (token_id: Uint256) = user_token_id.read(caller)
     let (token_id_felt: felt) = Uint256_to_felt(token_id)
+    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
 
     let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
     assert_array_includes(following_len, following, creator_token_id_felt, 1)
@@ -325,18 +320,17 @@ func User_rate{
     assert_nn(5 - rating)
     assert_nn(rating - 1)
 
-    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
 
     let (caller) = get_caller_address()
     let inputs : felt* = alloc()
-    assert inputs[0] = creator_token_id_felt
-    assert inputs[1] = rating
-    assert inputs[2] = nonce
-    verify_inputs_by_signature(caller, 3, inputs)
+    assert inputs[0] = rating
+    assert inputs[1] = nonce
+    verify_inputs_by_signature(caller, 2, inputs)
 
     let (contract) = erc721_contract.read()
     let (token_id: Uint256) = user_token_id.read(caller)
     let (token_id_felt: felt) = Uint256_to_felt(token_id)
+    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
 
     let (rated_len: felt, rated: felt*) = IStorage.getPropertyArray(contract, 'rated', token_id)
     assert_array_includes(rated_len, rated, creator_token_id_felt, 2)

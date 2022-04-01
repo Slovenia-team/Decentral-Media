@@ -11,21 +11,6 @@ struct Array:
     member arr: felt*
 end
 
-struct User:
-    member username: Array
-    member image: Array
-    member background_image: Array
-    member description: Array
-    member social_link: Array
-    member following: Array
-    member followers: Array
-    member contents: Array
-    member num_ratings: felt
-    member sum_ratings: felt
-    member created_at: felt
-end
-
-
 func deserialize{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,

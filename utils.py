@@ -23,6 +23,8 @@ def str_to_felt_array(text):
 def uint256_to_int(uint256):
     return uint256[0] + uint256[1]*2**128
 
+def uint256_to_felt(uint256):
+    return (uint256.high * (2 ** 128) + uint256.low)
 
 def uint256(val):
     return (val & 2**128-1, (val & (2**256-2**128)) >> 128)

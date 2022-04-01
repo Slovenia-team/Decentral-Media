@@ -90,10 +90,10 @@ func get_user{
     followers: felt*,
     contents_len: felt,
     contents: felt*,
-    num_ratings_len: felt,
-    num_ratings: felt*,
-    sum_ratings_len: felt,
-    sum_ratings: felt*,
+    rated_len: felt,
+    rated: felt*,
+    rating_len: felt,
+    rating: felt*,
     created_at: felt):
 
     let (username_len: felt, username: felt*,
@@ -104,11 +104,11 @@ func get_user{
     following_len: felt, following: felt*,
     followers_len: felt, followers: felt*,
     contents_len: felt, contents: felt*,
-    num_ratings_len: felt, num_ratings: felt*,
-    sum_ratings_len: felt, sum_ratings: felt*,
+    rated_len: felt, rated: felt*,
+    rating_len: felt, rating: felt*,
     created_at: felt) = User_getUser(address)
 
-    return (username_len, username, image_len, image, background_image_len, background_image, description_len, description, social_link_len, social_link, following_len, following, followers_len, followers, contents_len, contents, num_ratings_len, num_ratings, sum_ratings_len, sum_ratings, created_at)
+    return (username_len, username, image_len, image, background_image_len, background_image, description_len, description, social_link_len, social_link, following_len, following, followers_len, followers, contents_len, contents, rated_len, rated, rating_len, rating, created_at)
 end
 
 @view
