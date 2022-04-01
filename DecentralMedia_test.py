@@ -164,3 +164,60 @@ async def test_follow_user():
     exec_info = await decentral_media.get_user(address=USER2).call()
     assert exec_info.result.following == []
     assert exec_info.result.followers[0] == uint256_to_felt(token_id.result[0])
+
+    nonce = generate_nonce()
+    await decentral_media.unfollow(creator_token_id=token_id_creator.result[0],
+                                    nonce=nonce).invoke(
+                                    caller_address=USER1,
+                                    signature=sign_stark_inputs(7654321, [str(nonce)]))
+
+    exec_info = await decentral_media.get_user(address=USER1).call()
+    assert exec_info.result.following == []
+    assert exec_info.result.followers == []
+
+    exec_info = await decentral_media.get_user(address=USER2).call()
+    assert exec_info.result.following == []
+    assert exec_info.result.followers == []
+
+@pytest.mark.asyncio
+async def test_rate_user():
+    (starknet, user, content, decentral_media) = await deploy()
+    set_block_timestamp(starknet.state, 4)
+
+    nonce = generate_nonce()
+    await decentral_media.create_user(username=str_to_felt_array('Janez'),
+                                 image=str_to_felt_array('https://picsum.photos/200'),
+                                 background_image=str_to_felt_array('https://picsum.photos/seed/picsum/200/300'),
+                                 description=str_to_felt_array("I am here to read some good articles!"),
+                                 social_link=str_to_felt_array('https://twitter.com/janez'),
+                                 nonce=nonce).invoke(
+                                    caller_address=USER1,
+                                    signature=sign_stark_inputs(7654321, [str(1), str(2), str(3), str(3), str(2), str(nonce)]))
+
+    nonce = generate_nonce()
+    await decentral_media.create_user(username=str_to_felt_array('Marija'),
+                                 image=str_to_felt_array('https://picsum.photos/200'),
+                                 background_image=str_to_felt_array('https://picsum.photos/seed/picsum/200/300'),
+                                 description=str_to_felt_array("I write articles!"),
+                                 social_link=str_to_felt_array('https://twitter.com/marija'),
+                                 nonce=nonce).invoke(
+                                    caller_address=USER2,
+                                    signature=sign_stark_inputs(123, [str(1), str(2), str(3), str(2), str(2), str(nonce)]))
+
+    nonce = generate_nonce()
+    token_id_creator = await decentral_media.get_user_token_id(USER2).call()
+    await decentral_media.rate(creator_token_id=token_id_creator.result[0],
+                                rating=5,
+                                nonce=nonce).invoke(
+                                    caller_address=USER1,
+                                    signature=sign_stark_inputs(7654321, [str(5), str(nonce)]))
+
+    exec_info = await decentral_media.get_user(address=USER1).call()
+    assert exec_info.result.rated[0] == uint256_to_felt(token_id_creator.result[0])
+    assert exec_info.result.rating[0] == 0
+    assert exec_info.result.rating[1] == 0
+
+    exec_info = await decentral_media.get_user(address=USER2).call()
+    assert exec_info.result.rated == []
+    assert exec_info.result.rating[0] == 1
+    assert exec_info.result.rating[1] == 5

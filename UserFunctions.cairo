@@ -7,7 +7,7 @@ from starkware.cairo.common.uint256 import Uint256, uint256_eq
 from starkware.cairo.common.math import assert_nn
 
 
-from utils.Array import concat_arr, assert_array_includes, array_remove_element
+from utils.Array import concat_arr, assert_array_not_includes, assert_array_includes, array_remove_element
 from utils.DecentralMediaHelper import deserialize, Array, Uint256_to_felt, felt_to_Uint256
 from utils.utils import verify_inputs_by_signature
 from starknet_erc721_storage.IStorage import IStorage
@@ -262,7 +262,7 @@ func User_follow{
     let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
 
     let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
-    assert_array_includes(following_len, following, creator_token_id_felt, 1)
+    assert_array_not_includes(following_len, following, creator_token_id_felt, 1)
     assert following[following_len] = creator_token_id_felt
 
     let (followers_len: felt, followers: felt*) = IStorage.getPropertyArray(contract, 'followers', creator_token_id)
@@ -296,10 +296,10 @@ func User_unfollow{
 
     let (following_len: felt, following: felt*) = IStorage.getPropertyArray(contract, 'following', token_id)
     assert_array_includes(following_len, following, creator_token_id_felt, 1)
-    array_remove_element(following_len, following, creator_token_id_felt, 0)
+    array_remove_element(following_len, following, creator_token_id_felt)
 
     let (followers_len: felt, followers: felt*) = IStorage.getPropertyArray(contract, 'followers', creator_token_id)
-    array_remove_element(followers_len, followers, token_id_felt, 0)
+    array_remove_element(followers_len, followers, token_id_felt)
 
     IStorage.setPropertyArray(contract, 'following', token_id, following_len - 1, following)
     IStorage.setPropertyArray(contract, 'followers', creator_token_id, followers_len - 1, followers)
@@ -333,17 +333,18 @@ func User_rate{
     let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
 
     let (rated_len: felt, rated: felt*) = IStorage.getPropertyArray(contract, 'rated', token_id)
-    assert_array_includes(rated_len, rated, creator_token_id_felt, 2)
+    assert_array_not_includes(rated_len, rated, creator_token_id_felt, 2)
     assert rated[rated_len] = creator_token_id_felt
     assert rated[rated_len + 1] = rating
 
     IStorage.setPropertyArray(contract, 'rated', token_id, rated_len + 2, rated)
 
     let (ratings_len: felt, ratings: felt*) = IStorage.getPropertyArray(contract, 'rating', creator_token_id)
-    assert ratings[0] = ratings[0] + 1      # num_ratings
-    assert ratings[1] = ratings[1] + rating # sum_ratings
+    let (new_rating: felt*) = alloc()
+    assert new_rating[0] = ratings[0] + 1      # num_ratings
+    assert new_rating[1] = ratings[1] + rating # sum_ratings
 
-    IStorage.setPropertyArray(contract, 'rating', creator_token_id, ratings_len, ratings)
+    IStorage.setPropertyArray(contract, 'rating', creator_token_id, 2, new_rating)
 
     return ()
 end

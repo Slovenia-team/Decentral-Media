@@ -242,7 +242,7 @@ func Content_dislike{
 
     let (liked_by_len: felt, liked_by: felt*) = IStorage.getPropertyArray(contract, 'liked_by', token_id)
     assert_array_includes(liked_by_len, liked_by, user_token_id_felt, 1)
-    array_remove_element(liked_by_len, liked_by, user_token_id_felt, 0)
+    array_remove_element(liked_by_len, liked_by, user_token_id_felt)
     IStorage.setPropertyArray(contract, 'liked_by', token_id, liked_by_len - 1, liked_by)
     
     let (likes: felt) = IStorage.getPropertyFelt(contract, 'likes', token_id)
