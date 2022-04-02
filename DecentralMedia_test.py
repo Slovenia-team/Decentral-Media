@@ -46,6 +46,8 @@ async def deploy() -> (StarknetContract):
     nonce = generate_nonce()
     await decentral_media.set_user_erc721_contract(contract=user.contract_address, nonce=nonce).invoke(caller_address=STARK_KEY,
         signature=sign_stark_inputs(1234567, [str(user.contract_address), str(nonce)]))
+
+    nonce = generate_nonce()
     await decentral_media.set_content_erc721_contract(contract=content.contract_address, nonce=nonce).invoke(caller_address=STARK_KEY,
         signature=sign_stark_inputs(1234567, [str(content.contract_address), str(nonce)]))
     
@@ -80,6 +82,7 @@ async def test_create_user():
     assert exec_info.result.rating[0] == 0
     assert exec_info.result.rating[1] == 0
     assert exec_info.result.created_at == 1
+
 
 @pytest.mark.asyncio
 async def test_update_user():
@@ -123,6 +126,7 @@ async def test_update_user():
     assert exec_info.result.rating[0] == 0
     assert exec_info.result.rating[1] == 0
     assert exec_info.result.created_at == 2
+
 
 @pytest.mark.asyncio
 async def test_follow_user():
@@ -179,6 +183,7 @@ async def test_follow_user():
     assert exec_info.result.following == []
     assert exec_info.result.followers == []
 
+
 @pytest.mark.asyncio
 async def test_rate_user():
     (starknet, user, content, decentral_media) = await deploy()
@@ -221,3 +226,45 @@ async def test_rate_user():
     assert exec_info.result.rated == []
     assert exec_info.result.rating[0] == 1
     assert exec_info.result.rating[1] == 5
+
+
+@pytest.mark.asyncio
+async def test_create_content():
+    (starknet, user, content, decentral_media) = await deploy()
+    set_block_timestamp(starknet.state, 5)
+
+    nonce = generate_nonce()
+    await decentral_media.create_user(username=str_to_felt_array('Janez'),
+                                 image=str_to_felt_array('https://picsum.photos/200'),
+                                 background_image=str_to_felt_array('https://picsum.photos/seed/picsum/200/300'),
+                                 description=str_to_felt_array("I am here to read some good articles!"),
+                                 social_link=str_to_felt_array('https://twitter.com/janez'),
+                                 nonce=nonce).invoke(
+                                    caller_address=USER1,
+                                    signature=sign_stark_inputs(7654321, [str(1), str(2), str(3), str(3), str(2), str(nonce)]))
+
+    nonce = generate_nonce()
+    await decentral_media.create_content(content=str_to_felt_array('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce quam metus, euismod a tellus ac, efficitur aliquam ex. Nulla varius velit quam, vitae fringilla enim condimentum a. In hac habitasse platea dictumst. Etiam eget odio nisi. Donec in porttitor lacus. Etiam blandit, lectus ut pharetra feugiat, lacus dui maximus metus, vitae scelerisque turpis massa vel enim. Nunc vestibulum leo purus, eget iaculis sapien accumsan in. Vivamus maximus tellus at risus consequat, in ullamcorper ligula facilisis. Phasellus in lacus quam. Maecenas fringilla, mi sit amet condimentum pretium, arcu leo porttitor enim, a gravida erat ante vel neque. Curabitur cursus felis sed placerat feugiat. Sed eget mollis libero, ac lacinia ante. Fusce sit amet orci elementum, tristique turpis sed, condimentum quam. Ut elementum et lacus vehicula sollicitudin. Praesent tincidunt tellus vitae aliquam interdum.'),
+                                        tags=str_to_felt_array('lorem,ipsum'),
+                                        authors=str_to_felt_array('janez novak'),
+                                        public=1,
+                                        nonce=nonce).invoke(
+                                            caller_address=USER1,
+                                            signature=sign_stark_inputs(7654321, [str(60), str(1), str(1), str(1), str(nonce)]))
+
+    exec_info = await decentral_media.get_user(address=USER1).call()
+    print(exec_info.result)
+    assert exec_info.result.contents[0] == 1
+
+    exec_info = await decentral_media.get_content(token_id=exec_info.result.contents[0]).call()
+    print(exec_info.result)
+    assert felt_array_to_string(exec_info.result.content) == 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce quam metus, euismod a tellus ac, efficitur aliquam ex. Nulla varius velit quam, vitae fringilla enim condimentum a. In hac habitasse platea dictumst. Etiam eget odio nisi. Donec in porttitor lacus. Etiam blandit, lectus ut pharetra feugiat, lacus dui maximus metus, vitae scelerisque turpis massa vel enim. Nunc vestibulum leo purus, eget iaculis sapien accumsan in. Vivamus maximus tellus at risus consequat, in ullamcorper ligula facilisis. Phasellus in lacus quam. Maecenas fringilla, mi sit amet condimentum pretium, arcu leo porttitor enim, a gravida erat ante vel neque. Curabitur cursus felis sed placerat feugiat. Sed eget mollis libero, ac lacinia ante. Fusce sit amet orci elementum, tristique turpis sed, condimentum quam. Ut elementum et lacus vehicula sollicitudin. Praesent tincidunt tellus vitae aliquam interdum.'
+    assert felt_array_to_string(exec_info.result.tags) == 'lorem,ipsum'
+    assert felt_array_to_string(exec_info.result.authors) == 'janez novak'
+    assert felt_array_to_string(exec_info.result.social_link) == 'https://twitter.com/unknown2'
+    assert exec_info.result.liked_by == []
+    assert exec_info.result.likes == 0
+    assert exec_info.result.views == 0
+    assert exec_info.result.public == 1
+    assert exec_info.result.created_at == 5
+

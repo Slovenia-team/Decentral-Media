@@ -142,7 +142,7 @@ func User_createUser{
     let (counter) = user_counter.read()
     let (contract) = erc721_contract.read()
     let (timestamp) = get_block_timestamp()
-    let token_id: Uint256 = felt_to_Uint256(counter)
+    let token_id: Uint256 = felt_to_Uint256(counter + 1)
 
     IERC721.mint(contract, caller, token_id)
 

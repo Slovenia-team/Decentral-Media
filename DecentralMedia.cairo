@@ -4,9 +4,11 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin
 from starkware.cairo.common.uint256 import Uint256
+from starkware.cairo.common.math import assert_not_zero
 from starkware.starknet.common.syscalls import get_caller_address
 
 from utils.utils import verify_inputs_by_signature
+from utils.DecentralMediaHelper import Uint256_to_felt
 
 from UserFunctions import (
     User_getUserTokenId,
@@ -127,7 +129,7 @@ func get_content{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
-    address : felt) -> (
+    token_id : Uint256) -> (
     content_len: felt,
     content: felt*,
     tags_len: felt,
@@ -148,7 +150,40 @@ func get_content{
     likes: felt,
     views: felt,
     created_at: felt,
-    public: felt) = Content_getContent(address)
+    public: felt) = Content_getContent(token_id)
+
+    return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes, views, created_at, public)
+end
+
+@view
+func get_content_by_address{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    address : felt) -> (
+    content_len: felt,
+    content: felt*,
+    tags_len: felt,
+    tags: felt*,
+    authors_len: felt,
+    authors: felt*,
+    liked_by_len: felt,
+    liked_by: felt*,
+    likes: felt,
+    views: felt,
+    created_at: felt,
+    public: felt):
+
+    let (token_id) = Content_getContentTokenId(address)
+
+    let (content_len: felt, content: felt*,
+    tags_len: felt, tags: felt*,
+    authors_len: felt, authors: felt*,
+    liked_by_len: felt, liked_by: felt*,
+    likes: felt,
+    views: felt,
+    created_at: felt,
+    public: felt) = Content_getContent(token_id)
 
     return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes, views, created_at, public)
 end
@@ -280,6 +315,8 @@ func create_content{
     nonce: felt):
     let (caller) = get_caller_address()
     let (creator_token_id: Uint256) = User_getUserTokenId(caller)
+    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
+    assert_not_zero(creator_token_id_felt)
     Content_createContent(content_len, content, tags_len, tags, authors_len, authors, public, creator_token_id, nonce)
     return ()
 end

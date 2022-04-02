@@ -47,7 +47,7 @@ func Content_getContent{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
-    address : felt) -> (
+    token_id : Uint256) -> (
     content_len: felt,
     content: felt*,
     tags_len: felt,
@@ -62,7 +62,6 @@ func Content_getContent{
     created_at: felt):
     alloc_locals
 
-    let (token_id) = content_token_id.read(address=address)
     let (contract) = erc721_contract.read()
 
     let (views: felt) = IStorage.getPropertyFelt(contract, 'views', token_id)
@@ -124,7 +123,7 @@ func Content_createContent{
     let (counter) = content_counter.read()
     let (contract) = erc721_contract.read()
     let (timestamp) = get_block_timestamp()
-    let token_id: Uint256 = felt_to_Uint256(counter)
+    let token_id: Uint256 = felt_to_Uint256(counter + 1)
 
     IERC721.mint(contract, caller, token_id)
 
