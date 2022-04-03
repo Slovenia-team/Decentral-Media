@@ -19,7 +19,7 @@ from IERC721 import IERC721
 #
 
 @storage_var
-func erc721_contract() -> (contract : felt):
+func user_contract() -> (contract : felt):
 end
 
 @storage_var
@@ -73,7 +73,7 @@ func User_getUser{
     alloc_locals
 
     let (token_id) = user_token_id.read(address=address)
-    let (contract) = erc721_contract.read()
+    let (contract) = user_contract.read()
 
     let names : felt* = alloc()
     assert [names] = 'username'
@@ -140,7 +140,7 @@ func User_createUser{
     # TODO: If we are filtering by unique usernames, create storage variable for usernames and add assert here
 
     let (counter) = user_counter.read()
-    let (contract) = erc721_contract.read()
+    let (contract) = user_contract.read()
     let (timestamp) = get_block_timestamp()
     let token_id: Uint256 = felt_to_Uint256(counter + 1)
 
@@ -216,7 +216,7 @@ func User_updateUser{
 
     # TODO: If we are filtering by unique usernames, create storage variable for usernames and add assert here
 
-    let (contract) = erc721_contract.read()
+    let (contract) = user_contract.read()
 
     let (local names: felt*) = alloc()
     assert [names] = 'username'
@@ -242,6 +242,24 @@ func User_updateUser{
     return ()
 end
 
+func User_updateContents{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    content_token_id: Uint256):
+    alloc_locals
+
+    let (contract) = user_contract.read()
+
+    let (content_token_id_felt: felt) = Uint256_to_felt(content_token_id)
+    let (user_contents_len: felt, user_contents: felt*) = IStorage.getPropertyArray(contract, 'contents', token_id)
+    assert user_contents[user_contents_len] = content_token_id_felt
+    IStorage.setPropertyArray(contract, 'contents', token_id, user_contents_len + 1, user_contents)
+
+    return ()
+end
+
 func User_follow{
     syscall_ptr : felt*,
     ecdsa_ptr : SignatureBuiltin*,
@@ -256,7 +274,7 @@ func User_follow{
     assert inputs[0] = nonce
     verify_inputs_by_signature(caller, 1, inputs)
 
-    let (contract) = erc721_contract.read()
+    let (contract) = user_contract.read()
     let (token_id: Uint256) = user_token_id.read(caller)
     let (token_id_felt: felt) = Uint256_to_felt(token_id)
     let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
@@ -289,7 +307,7 @@ func User_unfollow{
     assert inputs[0] = nonce
     verify_inputs_by_signature(caller, 1, inputs)
 
-    let (contract) = erc721_contract.read()
+    let (contract) = user_contract.read()
     let (token_id: Uint256) = user_token_id.read(caller)
     let (token_id_felt: felt) = Uint256_to_felt(token_id)
     let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
@@ -320,14 +338,13 @@ func User_rate{
     assert_nn(5 - rating)
     assert_nn(rating - 1)
 
-
     let (caller) = get_caller_address()
     let inputs : felt* = alloc()
     assert inputs[0] = rating
     assert inputs[1] = nonce
     verify_inputs_by_signature(caller, 2, inputs)
 
-    let (contract) = erc721_contract.read()
+    let (contract) = user_contract.read()
     let (token_id: Uint256) = user_token_id.read(caller)
     let (token_id_felt: felt) = Uint256_to_felt(token_id)
     let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
@@ -364,7 +381,7 @@ func User_setContract{
     inputs[1] = nonce
     verify_inputs_by_signature(adm, 2, inputs)
 
-    erc721_contract.write(contract)
+    user_contract.write(contract)
 
     return ()
 end

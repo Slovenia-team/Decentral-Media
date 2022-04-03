@@ -15,6 +15,7 @@ from UserFunctions import (
     User_getUser,
     User_createUser,
     User_updateUser,
+    User_updateContents,
     User_follow,
     User_unfollow,
     User_rate,
@@ -22,7 +23,6 @@ from UserFunctions import (
 )
 
 from ContentFunctions import (
-    Content_getContentTokenId,
     Content_getContent,
     Content_createContent,
     Content_updateContent,
@@ -114,17 +114,6 @@ func get_user{
 end
 
 @view
-func get_content_token_id{
-    syscall_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr}(
-    address : felt) -> (
-    token_id : Uint256):
-    let (token_id: Uint256) = Content_getContentTokenId(address)
-    return (token_id)
-end
-
-@view
 func get_content{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
@@ -141,7 +130,8 @@ func get_content{
     likes: felt,
     views: felt,
     created_at: felt,
-    public: felt):
+    public: felt,
+    creator: felt):
 
     let (content_len: felt, content: felt*,
     tags_len: felt, tags: felt*,
@@ -150,42 +140,10 @@ func get_content{
     likes: felt,
     views: felt,
     created_at: felt,
-    public: felt) = Content_getContent(token_id)
+    public: felt,
+    creator: felt) = Content_getContent(token_id)
 
-    return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes, views, created_at, public)
-end
-
-@view
-func get_content_by_address{
-    syscall_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr}(
-    address : felt) -> (
-    content_len: felt,
-    content: felt*,
-    tags_len: felt,
-    tags: felt*,
-    authors_len: felt,
-    authors: felt*,
-    liked_by_len: felt,
-    liked_by: felt*,
-    likes: felt,
-    views: felt,
-    created_at: felt,
-    public: felt):
-
-    let (token_id) = Content_getContentTokenId(address)
-
-    let (content_len: felt, content: felt*,
-    tags_len: felt, tags: felt*,
-    authors_len: felt, authors: felt*,
-    liked_by_len: felt, liked_by: felt*,
-    likes: felt,
-    views: felt,
-    created_at: felt,
-    public: felt) = Content_getContent(token_id)
-
-    return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes, views, created_at, public)
+    return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes, views, created_at, public, creator)
 end
 
 
@@ -313,11 +271,15 @@ func create_content{
     authors: felt*,
     public: felt,
     nonce: felt):
+    alloc_locals
+
     let (caller) = get_caller_address()
     let (creator_token_id: Uint256) = User_getUserTokenId(caller)
     let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
     assert_not_zero(creator_token_id_felt)
-    Content_createContent(content_len, content, tags_len, tags, authors_len, authors, public, creator_token_id, nonce)
+
+    let (token_id: Uint256) = Content_createContent(content_len, content, tags_len, tags, authors_len, authors, public, creator_token_id_felt, nonce)
+    User_updateContents(creator_token_id, token_id)
     return ()
 end
 
