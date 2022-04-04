@@ -129,8 +129,8 @@ func get_content{
     liked_by: felt*,
     likes: felt,
     views: felt,
-    created_at: felt,
     public: felt,
+    created_at: felt,
     creator: felt):
 
     let (content_len: felt, content: felt*,
@@ -139,11 +139,11 @@ func get_content{
     liked_by_len: felt, liked_by: felt*,
     likes: felt,
     views: felt,
-    created_at: felt,
     public: felt,
+    created_at: felt,
     creator: felt) = Content_getContent(token_id)
 
-    return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes, views, created_at, public, creator)
+    return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes, views, public, created_at, creator)
 end
 
 
