@@ -13,13 +13,14 @@ from utils.DecentralMediaHelper import Uint256_to_felt
 from UserFunctions import (
     User_getUserTokenId,
     User_getUser,
+    User_getIsFlaged,
     User_createUser,
     User_updateUser,
     User_updateContents,
     User_follow,
     User_unfollow,
     User_rate,
-    User_setContract
+    User_setContract,
 )
 
 from ContentFunctions import (
@@ -275,6 +276,10 @@ func create_content{
 
     let (caller) = get_caller_address()
     let (creator_token_id: Uint256) = User_getUserTokenId(caller)
+    
+    let (flaged) = User_getIsFlaged(creator_token_id)
+    assert flaged = 0
+
     let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
     assert_not_zero(creator_token_id_felt)
 
@@ -323,3 +328,32 @@ func dislike{
     Content_dislike(token_id, user_token_id, nonce)
     return ()
 end
+
+@external
+func flag_user{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    flag: felt,
+    nonce: felt):
+    let (adm) = admin.read()
+    User_flag(adm, token_id, flag, nonce)
+    return ()
+end
+
+@external
+func flag_content{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    flag: felt,
+    nonce: felt):
+    let (adm) = admin.read()
+    Content_flag(adm, token_id, flag, nonce)
+    return ()
+end
+
