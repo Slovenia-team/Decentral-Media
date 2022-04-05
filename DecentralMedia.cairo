@@ -21,15 +21,18 @@ from UserFunctions import (
     User_unfollow,
     User_rate,
     User_setContract,
+    User_flag,
 )
 
 from ContentFunctions import (
     Content_getContent,
+    Content_getIsFlaged,
     Content_createContent,
     Content_updateContent,
     Content_like,
     Content_dislike,
-    Content_setContract
+    Content_setContract,
+    Content_flag,
 )
 
 #

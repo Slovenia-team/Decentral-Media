@@ -277,6 +277,7 @@ end
 
 func Content_flag{
     syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
     pedersen_ptr : HashBuiltin*,
     range_check_ptr}(
     adm: felt,
