@@ -25,7 +25,6 @@ from UserFunctions import (
 )
 
 from ContentFunctions import (
-    Content_getIsFlaged,
     Content_getContent,
     Content_createContent,
     Content_updateContent,
@@ -33,17 +32,14 @@ from ContentFunctions import (
     Content_like,
     Content_dislike,
     Content_setContract,
-    Content_flag
 )
 
 from CommentFunctions import (
-    Comment_getIsFlaged,
     Comment_getComment,
     Comment_createComment,
     Comment_like,
     Comment_dislike,
     Comment_setContract,
-    Comment_flag
 )
 
 #
@@ -449,32 +445,3 @@ func flag_user{
     User_flag(adm, token_id, flag, nonce)
     return ()
 end
-
-@external
-func flag_content{
-    syscall_ptr : felt*,
-    ecdsa_ptr : SignatureBuiltin*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr}(
-    token_id: Uint256,
-    flag: felt,
-    nonce: felt):
-    let (adm) = admin.read()
-    Content_flag(adm, token_id, flag, nonce)
-    return ()
-end
-
-@external
-func flag_comment{
-    syscall_ptr : felt*,
-    ecdsa_ptr : SignatureBuiltin*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr}(
-    token_id: Uint256,
-    flag: felt,
-    nonce: felt):
-    let (adm) = admin.read()
-    Comment_flag(adm, token_id, flag, nonce)
-    return ()
-end
-

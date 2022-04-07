@@ -30,17 +30,6 @@ end
 # Getters
 #
 
-func Content_getIsFlaged{
-    syscall_ptr : felt*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr}(
-    token_id: Uint256) -> (
-    flaged: felt):
-    let (contract) = content_contract.read()
-    let (flaged) = IStorage.getPropertyFelt(contract, 'flaged', token_id)
-    return (flaged)
-end
-
 func Content_getContent{
     syscall_ptr : felt*,
     pedersen_ptr : HashBuiltin*,
@@ -289,27 +278,6 @@ func Content_setContract{
     verify_inputs_by_signature(adm, 2, inputs)
 
     content_contract.write(contract)
-
-    return ()
-end
-
-func Content_flag{
-    syscall_ptr : felt*,
-    ecdsa_ptr : SignatureBuiltin*,
-    pedersen_ptr : HashBuiltin*,
-    range_check_ptr}(
-    adm: felt,
-    token_id: Uint256,
-    flag: felt,
-    nonce: felt):
-
-    let inputs : felt* = alloc()
-    inputs[0] = flag
-    inputs[1] = nonce
-    verify_inputs_by_signature(adm, 2, inputs)
-
-    let (contract) = content_contract.read()
-    IStorage.setPropertyFelt(contract, 'flaged', token_id, flag)
 
     return ()
 end
