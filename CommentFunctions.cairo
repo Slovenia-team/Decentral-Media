@@ -105,10 +105,10 @@ func Comment_createComment{
 
     let (local offsets: felt*) = alloc()
     assert [offsets] = comment_len
-    assert [offsets + 1] = offsets[1] + 1
-    assert [offsets + 2] = offsets[2] + 1
-    assert [offsets + 3] = offsets[3] + 1
-    assert [offsets + 4] = offsets[4] + 1
+    assert [offsets + 1] = offsets[0] + 1
+    assert [offsets + 2] = offsets[1] + 1
+    assert [offsets + 3] = offsets[2] + 1
+    assert [offsets + 4] = offsets[3] + 1
 
     let (local timestamp_arr: felt*) = alloc()
     assert [timestamp_arr] = timestamp

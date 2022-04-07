@@ -43,6 +43,10 @@ async def deploy() -> (StarknetContract):
         source=ER721_CONTRACT_FILE,
         constructor_calldata=[str_to_felt("Content Token"), str_to_felt("CT"), ADMIN],
         cairo_path=['cairo-contracts'])
+    comment = await starknet.deploy(
+        source=ER721_CONTRACT_FILE,
+        constructor_calldata=[str_to_felt("Comment Token"), str_to_felt("CMT"), ADMIN],
+        cairo_path=['cairo-contracts'])
     decentral_media = await starknet.deploy(
             source=DECMEDIA_CONTRACT_FILE,
             constructor_calldata=[ADMIN],
@@ -50,6 +54,7 @@ async def deploy() -> (StarknetContract):
 
     await user.transfer_ownership(new_owner=decentral_media.contract_address).invoke(caller_address=ADMIN)
     await content.transfer_ownership(new_owner=decentral_media.contract_address).invoke(caller_address=ADMIN)
+    await comment.transfer_ownership(new_owner=decentral_media.contract_address).invoke(caller_address=ADMIN)
     
     nonce = generate_nonce()
     await decentral_media.set_user_erc721_contract(contract=user.contract_address, nonce=nonce).invoke(caller_address=ADMIN,
@@ -58,7 +63,11 @@ async def deploy() -> (StarknetContract):
     nonce = generate_nonce()
     await decentral_media.set_content_erc721_contract(contract=content.contract_address, nonce=nonce).invoke(caller_address=ADMIN,
         signature=sign_stark_inputs(1234567, [str(content.contract_address), str(nonce)]))
-    
+
+    nonce = generate_nonce()
+    await decentral_media.set_comment_erc721_contract(contract=comment.contract_address, nonce=nonce).invoke(caller_address=ADMIN,
+        signature=sign_stark_inputs(1234567, [str(comment.contract_address), str(nonce)]))
+
     return starknet, decentral_media
 
 
@@ -211,14 +220,13 @@ async def test_create_content():
 
     token_id = await decentral_media.get_user_token_id(USER1).call()
     exec_info = await decentral_media.get_user(address=USER1).call()
-    print(exec_info.result)
     assert len(exec_info.result.contents) == 1
 
     exec_info = await decentral_media.get_content(token_id=uint256(exec_info.result.contents[0])).call()
-    print(exec_info.result)
     assert felt_array_to_string(exec_info.result.content) == 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce quam metus, euismod a tellus ac, efficitur aliquam ex. Nulla varius velit quam, vitae fringilla enim condimentum a. In hac habitasse platea dictumst. Etiam eget odio nisi. Donec in porttitor lacus. Etiam blandit, lectus ut pharetra feugiat, lacus dui maximus metus, vitae scelerisque turpis massa vel enim. Nunc vestibulum leo purus, eget iaculis sapien accumsan in. Vivamus maximus tellus at risus consequat, in ullamcorper ligula facilisis. Phasellus in lacus quam. Maecenas fringilla, mi sit amet condimentum pretium, arcu leo porttitor enim, a gravida erat ante vel neque. Curabitur cursus felis sed placerat feugiat. Sed eget mollis libero, ac lacinia ante. Fusce sit amet orci elementum, tristique turpis sed, condimentum quam. Ut elementum et lacus vehicula sollicitudin. Praesent tincidunt tellus vitae aliquam interdum.'
     assert felt_array_to_string(exec_info.result.tags) == 'lorem,ipsum'
     assert felt_array_to_string(exec_info.result.authors) == 'janez novak'
+    assert exec_info.result.comments == []
     assert exec_info.result.liked_by == []
     assert exec_info.result.likes == 0
     assert exec_info.result.views == 1
@@ -241,7 +249,6 @@ async def test_update_content():
 
     exec_info = await decentral_media.get_content(token_id=uint256(exec_info.result.contents[0])).call()
     
-    print(exec_info.result)
     assert exec_info.result.public == 0
 
 
@@ -252,26 +259,22 @@ async def test_like_content():
 
     user = await decentral_media.get_user(address=USER1).call()
     nonce = generate_nonce()
-    await decentral_media.like(token_id=uint256(user.result.contents[0]),
+    await decentral_media.like_content(token_id=uint256(user.result.contents[0]),
                                 nonce=nonce).invoke(caller_address=USER1,
                                             signature=sign_stark_inputs(7654321, [str(nonce)]))
 
     exec_info = await decentral_media.get_content(token_id=uint256(user.result.contents[0])).call()
     token_id = await decentral_media.get_user_token_id(USER1).call()
 
-    print(exec_info.result)
     assert exec_info.result.likes == 1
     assert exec_info.result.liked_by[0] == uint256_to_felt(token_id.result[0])
 
     nonce = generate_nonce()
-    await decentral_media.dislike(token_id=uint256(user.result.contents[0]),
+    await decentral_media.dislike_content(token_id=uint256(user.result.contents[0]),
                                 nonce=nonce).invoke(caller_address=USER1,
                                             signature=sign_stark_inputs(7654321, [str(nonce)]))
 
-    exec_info = await decentral_media.get_content(token_id=uint256(user.result.contents[0])).call()
-    token_id = await decentral_media.get_user_token_id(USER1).call()
-    
-    print(exec_info.result)
+    exec_info = await decentral_media.get_content(token_id=uint256(user.result.contents[0])).call()    
     assert exec_info.result.likes == 0
     assert exec_info.result.liked_by == []
 
@@ -285,7 +288,7 @@ async def test_flag_user():
     nonce = generate_nonce()
     await decentral_media.flag_user(token_id=token_id.result[0],
                                     flag=1,
-                                nonce=nonce).invoke(caller_address=ADMIN,
+                                    nonce=nonce).invoke(caller_address=ADMIN,
                                             signature=sign_stark_inputs(1234567, [str(1), str(nonce)]))
     nonce = generate_nonce()
     with pytest.raises(StarkException):
@@ -296,3 +299,63 @@ async def test_flag_user():
                                         nonce=nonce).invoke(
                                             caller_address=USER2,
                                             signature=sign_stark_inputs(123, [str(60), str(1), str(1), str(1), str(nonce)]))
+
+    nonce = generate_nonce()
+    await decentral_media.flag_user(token_id=token_id.result[0],
+                                    flag=0,
+                                    nonce=nonce).invoke(caller_address=ADMIN,
+                                            signature=sign_stark_inputs(1234567, [str(0), str(nonce)]))
+
+
+@pytest.mark.asyncio
+async def test_create_comment():
+    await deploy()
+    set_block_timestamp(starknet.state, 9)
+
+    user = await decentral_media.get_user(address=USER1).call()
+    token_id_user_2 = await decentral_media.get_user_token_id(USER2).call()
+
+    nonce = generate_nonce()
+    await decentral_media.create_comment(comment=str_to_felt_array('Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce quam metus, euismod a tellus ac, efficitur aliquam ex. Nulla varius velit quam, vitae fringilla enim condimentum a. In hac habitasse platea dictumst.'),
+                                        content_token_id=uint256(user.result.contents[0]),
+                                        nonce=nonce).invoke(
+                                            caller_address=USER2,
+                                            signature=sign_stark_inputs(123, [str(15), str(nonce)]))
+
+    exec_info = await decentral_media.get_content(token_id=uint256(user.result.contents[0])).call()
+    assert len(exec_info.result.comments) == 1
+
+    exec_info = await decentral_media.get_comment(token_id=uint256(exec_info.result.comments[0])).call()
+    assert felt_array_to_string(exec_info.result.comment) == 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce quam metus, euismod a tellus ac, efficitur aliquam ex. Nulla varius velit quam, vitae fringilla enim condimentum a. In hac habitasse platea dictumst.'
+    assert exec_info.result.liked_by == []
+    assert exec_info.result.likes == 0
+    assert exec_info.result.created_at == 9
+    assert exec_info.result.creator == uint256_to_felt(token_id_user_2.result[0])
+    assert exec_info.result.content == user.result.contents[0]
+
+@pytest.mark.asyncio
+async def test_like_comment():
+    await deploy()
+    set_block_timestamp(starknet.state, 10)
+
+    user = await decentral_media.get_user(address=USER1).call()
+    content = await decentral_media.get_content(token_id=uint256(user.result.contents[0])).call()
+    nonce = generate_nonce()
+    await decentral_media.like_comment(token_id=uint256(content.result.comments[0]),
+                                nonce=nonce).invoke(caller_address=USER1,
+                                            signature=sign_stark_inputs(7654321, [str(nonce)]))
+
+    exec_info = await decentral_media.get_comment(token_id=uint256(content.result.comments[0])).call()
+    token_id = await decentral_media.get_user_token_id(USER1).call()
+
+    assert exec_info.result.likes == 1
+    assert exec_info.result.liked_by[0] == uint256_to_felt(token_id.result[0])
+
+    nonce = generate_nonce()
+    await decentral_media.dislike_comment(token_id=uint256(user.result.contents[0]),
+                                nonce=nonce).invoke(caller_address=USER1,
+                                            signature=sign_stark_inputs(7654321, [str(nonce)]))
+
+    exec_info = await decentral_media.get_comment(token_id=uint256(content.result.comments[0])).call()    
+    assert exec_info.result.likes == 0
+    assert exec_info.result.liked_by == []

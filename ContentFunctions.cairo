@@ -41,6 +41,8 @@ func Content_getContent{
     tags: felt*,
     authors_len: felt,
     authors: felt*,
+    comments_len: felt,
+    comments: felt*,
     liked_by_len: felt,
     liked_by: felt*,
     likes: felt,
@@ -59,25 +61,27 @@ func Content_getContent{
     assert [names] = 'content'
     assert [names + 1] = 'tags'
     assert [names + 2] = 'authors'
-    assert [names + 3] = 'liked_by'
-    assert [names + 4] = 'likes'
-    assert [names + 5] = 'views'
-    assert [names + 6] = 'public'
-    assert [names + 7] = 'created_at'
-    assert [names + 8] = 'creator'
+    assert [names + 3] = 'comments'
+    assert [names + 4] = 'liked_by'
+    assert [names + 5] = 'likes'
+    assert [names + 6] = 'views'
+    assert [names + 7] = 'public'
+    assert [names + 8] = 'created_at'
+    assert [names + 9] = 'creator'
 
-    let (offsets_len, offsets, properties_len, properties) = IStorage.getProperties(contract, 9, names, token_id)
+    let (offsets_len, offsets, properties_len, properties) = IStorage.getProperties(contract, 10, names, token_id)
     let (data_len: felt, data: Array*) = deserialize(offsets_len, offsets, properties_len, properties)
 
     return (data[0].len, data[0].arr,
             data[1].len, data[1].arr,
             data[2].len, data[2].arr,
             data[3].len, data[3].arr,
-            data[4].arr[0],
+            data[4].len, data[4].arr,
             data[5].arr[0],
             data[6].arr[0],
             data[7].arr[0],
-            data[8].arr[0])
+            data[8].arr[0],
+            data[9].arr[0])
 end
 
 
