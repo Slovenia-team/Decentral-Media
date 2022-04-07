@@ -12,8 +12,8 @@ from utils.DecentralMediaHelper import Uint256_to_felt
 
 from UserFunctions import (
     User_getUserTokenId,
-    User_getUser,
     User_getIsFlaged,
+    User_getUser,
     User_createUser,
     User_updateUser,
     User_updateContents,
@@ -21,18 +21,29 @@ from UserFunctions import (
     User_unfollow,
     User_rate,
     User_setContract,
-    User_flag,
+    User_flag
 )
 
 from ContentFunctions import (
-    Content_getContent,
     Content_getIsFlaged,
+    Content_getContent,
     Content_createContent,
     Content_updateContent,
+    Content_updateComments,
     Content_like,
     Content_dislike,
     Content_setContract,
-    Content_flag,
+    Content_flag
+)
+
+from CommentFunctions import (
+    Comment_getIsFlaged,
+    Comment_getComment,
+    Comment_createComment,
+    Comment_like,
+    Comment_dislike,
+    Comment_setContract,
+    Comment_flag
 )
 
 #
@@ -150,6 +161,30 @@ func get_content{
     return (content_len, content, tags_len, tags, authors_len, authors, liked_by_len, liked_by, likes, views, public, created_at, creator)
 end
 
+@view
+func get_comment{
+    syscall_ptr : felt*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id : Uint256) -> (
+    comment_len: felt,
+    comment: felt*,
+    liked_by_len: felt,
+    liked_by: felt*,
+    likes: felt,
+    created_at: felt,
+    creator: felt,
+    content: felt):
+
+    let (comment_len: felt, comment: felt*,
+    liked_by_len: felt, liked_by: felt*,
+    likes: felt,
+    created_at: felt,
+    creator: felt,
+    content: felt) = Comment_getComment(token_id)
+
+    return (comment_len, comment, liked_by_len, liked_by, likes, created_at, creator, content)
+end
 
 #
 # Externals
@@ -305,7 +340,7 @@ func update_content{
 end
 
 @external
-func like{
+func like_content{
     syscall_ptr : felt*,
     ecdsa_ptr : SignatureBuiltin*,
     pedersen_ptr : HashBuiltin*,
@@ -319,7 +354,7 @@ func like{
 end
 
 @external
-func dislike{
+func dislike_content{
     syscall_ptr : felt*,
     ecdsa_ptr : SignatureBuiltin*,
     pedersen_ptr : HashBuiltin*,
@@ -329,6 +364,75 @@ func dislike{
     let (caller) = get_caller_address()
     let (user_token_id: Uint256) = User_getUserTokenId(caller)
     Content_dislike(token_id, user_token_id, nonce)
+    return ()
+end
+
+@external
+func set_comment_erc721_contract{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    contract : felt,
+    nonce : felt):
+    let (adm) = admin.read()
+    Comment_setContract(adm, contract, nonce)
+    return ()
+end
+
+@external
+func create_comment{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    comment_len: felt,
+    comment: felt*,
+    content_token_id: Uint256,
+    nonce: felt):
+    alloc_locals
+
+    let (caller) = get_caller_address()
+    let (creator_token_id: Uint256) = User_getUserTokenId(caller)
+    
+    let (flaged) = User_getIsFlaged(creator_token_id)
+    assert flaged = 0
+
+    let (creator_token_id_felt: felt) = Uint256_to_felt(creator_token_id)
+    assert_not_zero(creator_token_id_felt)
+
+    let (content_token_id_felt: felt) = Uint256_to_felt(content_token_id)
+
+    let (token_id: Uint256) = Comment_createComment(comment_len, comment, creator_token_id_felt, content_token_id_felt, nonce)
+    Content_updateComments(content_token_id, token_id)
+    return ()
+end
+
+@external
+func like_comment{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    nonce: felt):
+    let (caller) = get_caller_address()
+    let (user_token_id: Uint256) = User_getUserTokenId(caller)
+    Comment_like(token_id, user_token_id, nonce)
+    return ()
+end
+
+@external
+func dislike_comment{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    nonce: felt):
+    let (caller) = get_caller_address()
+    let (user_token_id: Uint256) = User_getUserTokenId(caller)
+    Comment_dislike(token_id, user_token_id, nonce)
     return ()
 end
 
@@ -357,6 +461,20 @@ func flag_content{
     nonce: felt):
     let (adm) = admin.read()
     Content_flag(adm, token_id, flag, nonce)
+    return ()
+end
+
+@external
+func flag_comment{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    flag: felt,
+    nonce: felt):
+    let (adm) = admin.read()
+    Comment_flag(adm, token_id, flag, nonce)
     return ()
 end
 
