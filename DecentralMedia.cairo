@@ -140,6 +140,8 @@ func get_content{
     comments: felt*,
     liked_by_len: felt,
     liked_by: felt*,
+    disliked_by_len: felt,
+    disliked_by: felt*,
     likes: felt,
     views: felt,
     public: felt,
@@ -151,13 +153,14 @@ func get_content{
     authors_len: felt, authors: felt*,
     comments_len: felt, comments: felt*,
     liked_by_len: felt, liked_by: felt*,
+    disliked_by_len: felt, disliked_by: felt*,
     likes: felt,
     views: felt,
     public: felt,
     created_at: felt,
     creator: felt) = Content_getContent(token_id)
 
-    return (content_len, content, tags_len, tags, authors_len, authors, comments_len, comments, liked_by_len, liked_by, likes, views, public, created_at, creator)
+    return (content_len, content, tags_len, tags, authors_len, authors, comments_len, comments, liked_by_len, liked_by, disliked_by_len, disliked_by, likes, views, public, created_at, creator)
 end
 
 @view
@@ -170,6 +173,8 @@ func get_comment{
     comment: felt*,
     liked_by_len: felt,
     liked_by: felt*,
+    disliked_by_len: felt,
+    disliked_by: felt*,
     likes: felt,
     created_at: felt,
     creator: felt,
@@ -177,12 +182,13 @@ func get_comment{
 
     let (comment_len: felt, comment: felt*,
     liked_by_len: felt, liked_by: felt*,
+    disliked_by_len: felt, disliked_by: felt*,
     likes: felt,
     created_at: felt,
     creator: felt,
     content: felt) = Comment_getComment(token_id)
 
-    return (comment_len, comment, liked_by_len, liked_by, likes, created_at, creator, content)
+    return (comment_len, comment, liked_by_len, liked_by, disliked_by_len, disliked_by, likes, created_at, creator, content)
 end
 
 #

@@ -6,7 +6,7 @@ from starkware.starknet.common.syscalls import get_tx_signature, get_contract_ad
 from starkware.cairo.common.uint256 import Uint256, uint256_eq
 from starkware.cairo.common.math import assert_nn
 
-from utils.Array import concat_arr, assert_array_includes, array_remove_element
+from utils.Array import concat_arr, assert_array_includes, array_remove_element, array_includes
 from utils.DecentralMediaHelper import deserialize, Array, Uint256_to_felt, felt_to_Uint256
 from utils.utils import verify_inputs_by_signature
 from starknet_erc721_storage.IStorage import IStorage
@@ -45,6 +45,8 @@ func Content_getContent{
     comments: felt*,
     liked_by_len: felt,
     liked_by: felt*,
+    disliked_by_len: felt,
+    disliked_by: felt*,
     likes: felt,
     views: felt,
     public: felt,
@@ -63,13 +65,14 @@ func Content_getContent{
     assert [names + 2] = 'authors'
     assert [names + 3] = 'comments'
     assert [names + 4] = 'liked_by'
-    assert [names + 5] = 'likes'
-    assert [names + 6] = 'views'
-    assert [names + 7] = 'public'
-    assert [names + 8] = 'created_at'
-    assert [names + 9] = 'creator'
+    assert [names + 5] = 'disliked_by'
+    assert [names + 6] = 'likes'
+    assert [names + 7] = 'views'
+    assert [names + 8] = 'public'
+    assert [names + 9] = 'created_at'
+    assert [names + 10] = 'creator'
 
-    let (offsets_len, offsets, properties_len, properties) = IStorage.getProperties(contract, 10, names, token_id)
+    let (offsets_len, offsets, properties_len, properties) = IStorage.getProperties(contract, 11, names, token_id)
     let (data_len: felt, data: Array*) = deserialize(offsets_len, offsets, properties_len, properties)
 
     return (data[0].len, data[0].arr,
@@ -77,11 +80,12 @@ func Content_getContent{
             data[2].len, data[2].arr,
             data[3].len, data[3].arr,
             data[4].len, data[4].arr,
-            data[5].arr[0],
+            data[5].len, data[5].arr,
             data[6].arr[0],
             data[7].arr[0],
             data[8].arr[0],
-            data[9].arr[0])
+            data[9].arr[0],
+            data[10].arr[0])
 end
 
 
@@ -232,12 +236,24 @@ func Content_like{
     IStorage.setPropertyArray(contract, 'liked_by', token_id, liked_by_len + 1, liked_by)
 
     let (likes: felt) = IStorage.getPropertyFelt(contract, 'likes', token_id)
-    IStorage.setPropertyFelt(contract, 'likes', token_id, likes + 1)
+    let (disliked_by_len: felt, disliked_by: felt*) = IStorage.getPropertyArray(contract, 'disliked_by', token_id)
+    let (includes: felt) = array_includes(disliked_by_len, disliked_by, user_token_id_felt, 1)
+    if includes == 1:
+        array_remove_element(disliked_by_len, disliked_by, user_token_id_felt)
+        IStorage.setPropertyArray(contract, 'disliked_by', token_id, disliked_by_len - 1, disliked_by)
+        IStorage.setPropertyFelt(contract, 'likes', token_id, likes + 2)
+        tempvar syscall_ptr = syscall_ptr
+        tempvar range_check_ptr = range_check_ptr
+    else:
+        IStorage.setPropertyFelt(contract, 'likes', token_id, likes + 1)
+        tempvar syscall_ptr = syscall_ptr
+        tempvar range_check_ptr = range_check_ptr
+    end
 
     return ()
 end
 
-func Content_dislike{
+func Content_remove_like{
     syscall_ptr : felt*,
     ecdsa_ptr : SignatureBuiltin*,
     pedersen_ptr : HashBuiltin*,
@@ -262,6 +278,76 @@ func Content_dislike{
     
     let (likes: felt) = IStorage.getPropertyFelt(contract, 'likes', token_id)
     IStorage.setPropertyFelt(contract, 'likes', token_id, likes - 1)
+
+    return ()
+end
+
+func Content_dislike{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    user_token_id: Uint256,
+    nonce: felt):
+    alloc_locals
+
+    let (caller) = get_caller_address()
+    let inputs : felt* = alloc()
+    assert inputs[0] = nonce
+    verify_inputs_by_signature(caller, 1, inputs)
+
+    let (contract) = content_contract.read()
+    let (user_token_id_felt: felt) = Uint256_to_felt(user_token_id)
+
+    let (disliked_by_len: felt, disliked_by: felt*) = IStorage.getPropertyArray(contract, 'disliked_by', token_id)
+    assert_array_includes(disliked_by_len, disliked_by, user_token_id_felt, 1)
+    assert disliked_by[disliked_by_len] = user_token_id_felt
+    IStorage.setPropertyArray(contract, 'disliked_by', token_id, disliked_by_len + 1, disliked_by)
+
+    let (likes: felt) = IStorage.getPropertyFelt(contract, 'likes', token_id)
+    let (liked_by_len: felt, liked_by: felt*) = IStorage.getPropertyArray(contract, 'liked_by', token_id)
+    let (includes: felt) = array_includes(liked_by_len, liked_by, user_token_id_felt, 1)
+    if includes == 1:
+        array_remove_element(liked_by_len, liked_by, user_token_id_felt)
+        IStorage.setPropertyArray(contract, 'liked_by', token_id, liked_by_len - 1, liked_by)
+        IStorage.setPropertyFelt(contract, 'likes', token_id, likes - 2)
+        tempvar syscall_ptr = syscall_ptr
+        tempvar range_check_ptr = range_check_ptr
+    else:
+        IStorage.setPropertyFelt(contract, 'likes', token_id, likes - 1)
+        tempvar syscall_ptr = syscall_ptr
+        tempvar range_check_ptr = range_check_ptr
+    end
+
+    return ()
+end
+
+func Content_remove_dislike{
+    syscall_ptr : felt*,
+    ecdsa_ptr : SignatureBuiltin*,
+    pedersen_ptr : HashBuiltin*,
+    range_check_ptr}(
+    token_id: Uint256,
+    user_token_id: Uint256,
+    nonce: felt):
+    alloc_locals
+
+    let (caller) = get_caller_address()
+    let inputs : felt* = alloc()
+    assert inputs[0] = nonce
+    verify_inputs_by_signature(caller, 1, inputs)
+
+    let (contract) = content_contract.read()
+    let (user_token_id_felt: felt) = Uint256_to_felt(user_token_id)
+
+    let (disliked_by_len: felt, disliked_by: felt*) = IStorage.getPropertyArray(contract, 'disliked_by', token_id)
+    assert_array_includes(disliked_by_len, disliked_by, user_token_id_felt, 1)
+    array_remove_element(disliked_by_len, disliked_by, user_token_id_felt)
+    IStorage.setPropertyArray(contract, 'disliked_by', token_id, disliked_by_len - 1, disliked_by)
+    
+    let (likes: felt) = IStorage.getPropertyFelt(contract, 'likes', token_id)
+    IStorage.setPropertyFelt(contract, 'likes', token_id, likes + 1)
 
     return ()
 end

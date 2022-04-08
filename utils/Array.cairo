@@ -53,6 +53,26 @@ func assert_array_includes{range_check_ptr}(
     return ()
 end
 
+func array_includes{range_check_ptr}(
+    arr_len: felt,
+    arr: felt*,
+    num: felt,
+    step: felt
+    ) -> (includes: felt):
+
+    if arr_len == 0:
+        return (0)
+    end
+    
+    if arr[0] == num:
+        return (1)
+    end
+
+    let (res: felt) = array_includes(arr_len - step, arr + step, num, step)
+
+    return (res)
+end
+
 func array_remove_element{range_check_ptr}(
     arr_len: felt,
     arr: felt*,

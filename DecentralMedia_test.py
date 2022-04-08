@@ -228,6 +228,7 @@ async def test_create_content():
     assert felt_array_to_string(exec_info.result.authors) == 'janez novak'
     assert exec_info.result.comments == []
     assert exec_info.result.liked_by == []
+    assert exec_info.result.disliked_by == []
     assert exec_info.result.likes == 0
     assert exec_info.result.views == 1
     assert exec_info.result.public == 1
@@ -268,6 +269,7 @@ async def test_like_content():
 
     assert exec_info.result.likes == 1
     assert exec_info.result.liked_by[0] == uint256_to_felt(token_id.result[0])
+    assert exec_info.result.disliked_by == []
 
     nonce = generate_nonce()
     await decentral_media.dislike_content(token_id=uint256(user.result.contents[0]),
@@ -275,8 +277,9 @@ async def test_like_content():
                                             signature=sign_stark_inputs(7654321, [str(nonce)]))
 
     exec_info = await decentral_media.get_content(token_id=uint256(user.result.contents[0])).call()    
-    assert exec_info.result.likes == 0
+    assert exec_info.result.likes == int_to_negative_felt(-1)
     assert exec_info.result.liked_by == []
+    assert exec_info.result.disliked_by[0] == uint256_to_felt(token_id.result[0])
 
 
 @pytest.mark.asyncio
@@ -328,6 +331,7 @@ async def test_create_comment():
     exec_info = await decentral_media.get_comment(token_id=uint256(exec_info.result.comments[0])).call()
     assert felt_array_to_string(exec_info.result.comment) == 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce quam metus, euismod a tellus ac, efficitur aliquam ex. Nulla varius velit quam, vitae fringilla enim condimentum a. In hac habitasse platea dictumst.'
     assert exec_info.result.liked_by == []
+    assert exec_info.result.disliked_by == []
     assert exec_info.result.likes == 0
     assert exec_info.result.created_at == 9
     assert exec_info.result.creator == uint256_to_felt(token_id_user_2.result[0])
@@ -350,6 +354,7 @@ async def test_like_comment():
 
     assert exec_info.result.likes == 1
     assert exec_info.result.liked_by[0] == uint256_to_felt(token_id.result[0])
+    assert exec_info.result.disliked_by == []
 
     nonce = generate_nonce()
     await decentral_media.dislike_comment(token_id=uint256(user.result.contents[0]),
@@ -357,5 +362,6 @@ async def test_like_comment():
                                             signature=sign_stark_inputs(7654321, [str(nonce)]))
 
     exec_info = await decentral_media.get_comment(token_id=uint256(content.result.comments[0])).call()    
-    assert exec_info.result.likes == 0
+    assert exec_info.result.likes == int_to_negative_felt(-1)
     assert exec_info.result.liked_by == []
+    assert exec_info.result.disliked_by[0] == uint256_to_felt(token_id.result[0])
