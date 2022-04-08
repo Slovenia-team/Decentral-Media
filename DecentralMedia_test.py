@@ -7,7 +7,7 @@ from starkware.starknet.testing.contract import StarknetContract
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starkware_utils.error_handling import StarkException
 from starkware.crypto.signature.fast_pedersen_hash import pedersen_hash
-from starkware.starknet.business_logic.state import BlockInfo
+from starkware.starknet.business_logic.state.state import BlockInfo
 
 ADMIN = private_to_stark_key(1234567)
 USER1 = private_to_stark_key(7654321)
