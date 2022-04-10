@@ -7,7 +7,7 @@ from starkware.starknet.testing.contract import StarknetContract
 from starkware.starknet.testing.starknet import Starknet
 from starkware.starkware_utils.error_handling import StarkException
 from starkware.crypto.signature.fast_pedersen_hash import pedersen_hash
-from starkware.starknet.business_logic.state.state import BlockInfo
+from starkware.starknet.business_logic.state import BlockInfo
 
 ADMIN = private_to_stark_key(1234567)
 USER1 = private_to_stark_key(7654321)
@@ -19,7 +19,7 @@ decentral_media = None
 
 def set_block_timestamp(starknet_state, timestamp):
     starknet_state.state.block_info = BlockInfo(
-        starknet_state.state.block_info.block_number, timestamp, 250
+        starknet_state.state.block_info.block_number, timestamp
     )
 
 def sign_stark_inputs(private_key, inputs):

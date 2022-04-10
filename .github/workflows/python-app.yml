@@ -25,7 +25,7 @@ jobs:
         python -m pip install --upgrade pip
         sudo apt install -y libgmp3-dev
         git submodule update --init --recursive
-        pip install ecdsa fastecdsa sympy flake8 pytest pytest-asyncio cairo-lang
+        pip install ecdsa fastecdsa sympy flake8 pytest pytest-asyncio cairo-lang==0.8.0
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Test with pytest
       run: |
