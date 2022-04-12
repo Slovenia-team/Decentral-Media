@@ -1,5 +1,5 @@
 # Decentral Media
-[![Tests and linter](https://github.com/Slovenia-team/Decentral-Media/actions/workflows/python-app.yml/badge.svg)](https://github.com/Slovenia-team/starknet-erc721-storage/actions/workflows/python-app.yml)
+[![Tests and linter](https://github.com/Slovenia-team/Decentral-Media/actions/workflows/python-app.yml/badge.svg)](https://github.com/Slovenia-team/Decentral-Media/actions/workflows/python-app.yml)
 
 Decentralized Media Network on ETH Layer 2.
 
