@@ -140,7 +140,7 @@ created_at: felt
 
 ### `create_user`
 
-Create a new user on Starknet.
+Mint a new user ERC721 token on Starknet. Each and only 1 token can be associated with user address.
 
 #### Parameters:
 ```
@@ -163,7 +163,7 @@ None.
 
 ### `update_user`
 
-Update user data on Starknet.
+Update user token metadata on Starknet.
 
 #### Parameters:
 ```
@@ -187,7 +187,7 @@ None.
 
 ### `follow`
 
-Follow the content creator.
+Follow the content creator. Update lists of `following` and `followers` in user token metadata.
 
 #### Parameters:
 ```
@@ -201,7 +201,7 @@ None.
 
 ### `unfollow`
 
-Unfollow the content creator.
+Unfollow the content creator. Update lists of `following` and `followers` in user token metadata.
 
 #### Parameters:
 ```
@@ -215,7 +215,7 @@ None.
 
 ### `rate`
 
-Rate the content creator. You can only rate a content creator you are following.
+Rate the content creator. You can only rate a content creator you are following. Ratings can range between 1 and 5 stars.
 
 #### Parameters:
 ```
@@ -230,7 +230,7 @@ None.
 
 ### `flag_user`
 
-Admin only! Set User erc721 contract address.
+Admin only! Set a flag for user to restrict them from creating content and comments. Flag is stored in user token metadata.
 
 #### Parameters:
 ```
@@ -261,7 +261,7 @@ None.
 
 ### `get_content`
 
-Get content data.
+Get content data. Each call increases number of content views.
 
 #### Parameters:
 ```
@@ -292,7 +292,7 @@ creator: felt
 
 ### `create_content`
 
-Create content on Starknet.
+Mint a new content ERC721 token on Starknet.
 
 #### Parameters:
 ```
@@ -312,7 +312,7 @@ None.
 
 ### `update_content`
 
-Update visibility of content.
+Update visibility of content (public/private).
 
 #### Parameters:
 ```
@@ -327,7 +327,7 @@ None.
 
 ### `like_content`
 
-Like the content.
+Like the content. If user disliked the content beforehand, the dislike is removed.
 
 #### Parameters:
 ```
@@ -341,21 +341,7 @@ None.
 
 ### `dislike_content`
 
-Dislike the content.
-
-#### Parameters:
-```
-token_id: Uint256
-nonce: felt
-```
-
-#### Returns:
-
-None.
-
-### `dislike_content`
-
-Dislike the content.
+Dislike the content. If user liked the content beforehand, the like is removed.
 
 #### Parameters:
 ```
@@ -409,7 +395,7 @@ content: felt
 
 ### `create_comment`
 
-Create a new comment on a content.
+Mint a new comment ERC721 token on Starknet.
 
 #### Parameters:
 ```
@@ -425,7 +411,7 @@ None.
 
 ### `like_comment`
 
-Like a comment.
+Like a comment. If user disliked the comment beforehand, the dislike is removed.
 
 #### Parameters:
 ```
@@ -439,7 +425,7 @@ None.
 
 ### `dislike_comment`
 
-Dislike a comment.
+Dislike a comment. If user liked the comment beforehand, the like is removed.
 
 #### Parameters:
 ```
